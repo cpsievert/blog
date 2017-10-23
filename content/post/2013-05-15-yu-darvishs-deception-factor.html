@@ -18,19 +18,19 @@ pitches &lt;- plyr::join(atbats, dat$pitch, by = c(&quot;num&quot;, &quot;url&qu
 <p>The <strong>pitchRx</strong> package also provides a function called <code>animateFX()</code> which makes it easy to animate pitches. Note that we take a different perspective from above by imagining the pitches coming closer as time progresses. <span class="marginnote"> If you’re following along, you probably want to do <code>animation::saveHTML(animateFX(pitches))</code> instead for a better viewing experience. You can also check out <a href="http://cpsievert.github.io/baseballR/20140818/">this post</a> to see how to make more interactive animations. </span></p>
 <pre class="r"><code>animateFX(pitches)</code></pre>
 <video width="672"  controls loop>
-<source src="/post/2013-05-15-yu-darvishs-deception-factor_files/figure-html/ani.webm" />
+<source src="2013-05-15-yu-darvishs-deception-factor_files/figure-html/ani.webm" />
 </video>
 <p>One thing to notice here is the different release points by Darvish (especially for his slider). Furthermore, Darvish didn’t even throw a curveball to Pujols. If you look closer at the original gif, you can actually see a different batter (than Pujols) in the batter’s box (look for a white bat). Darvish’s delivery looks very similar on videotape, but his arm angle (and thus) release point might be slightly different across pitch types according to the PITCHf/x data. Let’s take a closer look at Darvish’s release point during this start.</p>
 <pre class="r"><code>atbats &lt;- subset(dat$atbat, pitcher_name == &quot;Yu Darvish&quot;)
 Darvish &lt;- plyr::join(atbats, dat$pitch, by = c(&quot;num&quot;, &quot;url&quot;))
 qplot(data=Darvish, x=as.numeric(x0), y=as.numeric(z0), color=pitch_type) +
   coord_equal()</code></pre>
-<p><img src="/post/2013-05-15-yu-darvishs-deception-factor_files/figure-html/release-1.png" width="672" /></p>
+<p><img src="2013-05-15-yu-darvishs-deception-factor_files/figure-html/release-1.png" width="672" /></p>
 <p>As you can see, Darvish has quite different release points according to pitch type. For example, his slider tends to be more ‘side-arm’ compared to his four-seam fastball. Now, whether that difference is distinguishable to the human-eye is another question…</p>
 <p>EDIT: Thanks to a recommendation by <span class="citation">[@Sky_Kalman]</span>(<a href="https://twitter.com/Sky_Kalkman" class="uri">https://twitter.com/Sky_Kalkman</a>), normalizing release points should make it easier to make visual comparison of flight paths across the pitch types. Here is one way to go about that:</p>
 <pre class="r"><code>pitches$x0 &lt;- mean(as.numeric(pitches$x0))
 pitches$z0 &lt;- mean(as.numeric(pitches$z0))
 animateFX(pitches)</code></pre>
 <video width="672"  controls loop>
-<source src="/post/2013-05-15-yu-darvishs-deception-factor_files/figure-html/normalized.webm" />
+<source src="2013-05-15-yu-darvishs-deception-factor_files/figure-html/normalized.webm" />
 </video>

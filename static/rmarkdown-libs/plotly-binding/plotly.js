@@ -4,13 +4,6 @@ HTMLWidgets.widget({
   type: "output",
 
   initialize: function(el, width, height) {
-    // when upgrading plotly.js,
-    // uncomment this console.log(), then do `load_all(); plot_ly()` 
-    // open in chrome, right-click on console output: "save-as" -> "schema.json"
-    // Schema <- jsonlite::fromJSON("~/Downloads/schema.json")
-    // devtools::use_data(Schema, overwrite = T, internal = T)
-    // console.log(JSON.stringify(Plotly.PlotSchema.get()));
-    
     return {};
   },
 
@@ -158,6 +151,23 @@ HTMLWidgets.widget({
       var plot = Plotly.plot(graphDiv, x);
       
     }
+    
+    // Trigger plotly.js calls defined via `plotlyProxy()`
+    plot.then(function() {
+      if (HTMLWidgets.shinyMode) {
+        Shiny.addCustomMessageHandler("plotly-calls", function(msg) {
+          var gd = document.getElementById(msg.id);
+          if (!gd) {
+            throw new Error("Couldn't find plotly graph with id: " + msg.id);
+          }
+          if (!Plotly[msg.method]) {
+            throw new Error("Unknown method " + msg.method);
+          }
+          var args = [gd].concat(msg.args);
+          Plotly[msg.method].apply(null, args);
+        });
+      }
+    });
     
     // Attach attributes (e.g., "key", "z") to plotly event data
     function eventDataWithKey(eventData) {
@@ -568,10 +578,11 @@ TraceManager.prototype.updateSelection = function(group, keys) {
         }
         
         // if it is defined, override color with the "dynamic brush color""
+        // TODO: DRY this up
         var d = this.gd._fullData[i];
         if (d.marker) {
-          trace.marker = d.marker;
-          trace.marker.color =  selectionColour || trace.marker.color;
+          trace.marker = trace.marker || {};
+          trace.marker.color =  selectionColour || trace.marker.color || d.marker.color;
           
           // adopt any user-defined styling for the selection
           var selected = this.highlight.selected.marker || {};
@@ -582,8 +593,8 @@ TraceManager.prototype.updateSelection = function(group, keys) {
         }
         
         if (d.line) {
-          trace.line = d.line;
-          trace.line.color =  selectionColour || trace.line.color;
+          trace.line = trace.line || {};
+          trace.line.color =  selectionColour || trace.line.color || d.line.color;
           
           // adopt any user-defined styling for the selection
           var selected = this.highlight.selected.line || {};
@@ -594,8 +605,8 @@ TraceManager.prototype.updateSelection = function(group, keys) {
         }
         
         if (d.textfont) {
-          trace.textfont = d.textfont;
-          trace.textfont.color =  selectionColour || trace.textfont.color;
+          trace.textfont = trace.textfont || {};
+          trace.textfont.color =  selectionColour || trace.textfont.color || d.textfont.color;
           
           // adopt any user-defined styling for the selection
           var selected = this.highlight.selected.textfont || {};

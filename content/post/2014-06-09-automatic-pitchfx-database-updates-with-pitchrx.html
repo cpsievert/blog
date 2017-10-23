@@ -19,10 +19,9 @@ packageVersion(&quot;pitchRx&quot;) </code></pre>
 <pre class="r"><code>db &lt;- src_sqlite(&quot;new-db.sqlite3&quot;, create = TRUE)
 scrape(start = &quot;2014-06-01&quot;, end = &quot;2014-06-01&quot;, connect = db$con)</code></pre>
 <pre class="r"><code>select(tbl(db, &quot;atbat&quot;), date)</code></pre>
-<pre><code>## Source:   query [?? x 1]
-## Database: sqlite 3.11.1 [new-db.sqlite3]
-## 
-## # A tibble: ?? x 1
+<pre><code>## # Source:   lazy query [?? x 1]
+## # Database: sqlite 3.19.3
+## #   [/Users/cpsievert/github/blog2/content/post/new-db.sqlite3]
 ##          date
 ##         &lt;chr&gt;
 ##  1 2014_06_01
