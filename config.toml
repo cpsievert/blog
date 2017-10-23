@@ -10,6 +10,8 @@ googleAnalytics = "UA-60116966-2"
 ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
 RSSLink = true
 
+# DO NOT CHANGE PERMALINKS OR ELSE YOU WILL KILL OLD LINKS AND
+# CAUSE YOURSELF PAIN
 # NOTE: the .html extension was added to support "legacy" links
 [permalinks]
     post = "/:year/:month/:day/:slug.html"
