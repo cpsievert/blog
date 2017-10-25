@@ -1,0 +1,144 @@
+---
+title: "plotly 4.7.1 now on CRAN"
+date: "2017-07-13"
+categories: [plotly, R, shiny]
+---
+
+<p>I'm excited to announce that plotly 4.7.1 is now on CRAN! Along with some important bug fixes and numerous improvements to the underlying plotly.js library, this release includes an exciting new R-specific feature -- the ability to <em>modify</em> (i.e., update without a full redraw) an existing plotly graph inside a shiny app via the new <code>plotlyProxy()</code> function. In other words, this proxy interface allows one to perform more efficient and responsive updates to a plotly graph within a shiny app. Before I provide an overview of the proxy interface, lets jump right into some of new plotly.js goodies.</p>
+<div id="new-plotly.js-goodies" class="section level2">
+<h2>New plotly.js goodies</h2>
+<p>Upgrading the R package from 4.7.0 to 4.7.1 upgrades the corresponding plotly.js version from 1.27.1 to 1.29.2. A number of exciting improvements have been added, just to name a few: select/lasso events for scattergl/scattermapbox trace types, 3D annotations, contour labelling, and even touch events on mobile. For quite a while now, R users have been able to <a href="https://plotly-book.cpsievert.me/linking-views-without-shiny.html">link multiple views (without shiny)</a> using nearly any (SVG) trace type (e.g., scatter, bar, heatmap, etc), but the new brush events on scattergl/scattermapbox trace types allow us to brush way more points and trigger selections via a map. Here is an example of highlighting earthquakes west of Fiji to compare the relative frequency of their magnitude and number of reporting stations (to the overall relative frequency):</p>
+<div align="center">
+<p><img src="http://i.imgur.com/l61zu6R.gif" width=900 height=400 /></p>
+</div>
+<p>And the R code to generate the (self-contained!) HTML:</p>
+<pre class="r"><code>library(crosstalk)
+eqs <- SharedData$new(quakes)
+
+# you need a mapbox API key to use plot_mapbox()
+# https://www.mapbox.com/signup/?route-to=https://www.mapbox.com/studio/account/tokens/
+map <- plot_mapbox(eqs, x = ~long, y = ~lat) %>%
+  add_markers(color = ~depth) %>%
+  layout(
+    mapbox = list(
+      zoom = 2,
+      center = list(lon = ~mean(long), lat = ~mean(lat))
+    )
+  ) %>%
+  highlight("plotly_selected")
+
+# shared properties of the two histograms
+hist_base <- plot_ly(eqs, color = I("black"), histnorm = "probability density") %>%
+  layout(barmode = "overlay", showlegend = FALSE) %>%
+  highlight(selected = attrs_selected(opacity = 0.5))
+
+histograms <- subplot(
+  add_histogram(hist_base, x = ~mag),
+  add_histogram(hist_base, x = ~stations),
+  nrows = 2, titleX = TRUE
+)
+
+bscols(histograms, map)</code></pre>
+<p>Another super cool and easy-to-use plotly.js feature is contour line labelling:</p>
+<pre class="r"><code>plot_ly(z = volcano, type = "contour", contours = list(showlabels = TRUE)) %>%
+  colorbar(title = "Elevation \n in meters")</code></pre>
+<iframe src="https://plot.ly/~cpsievert/21126/.embed" width="100%" height="400" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>To learn more about all the new plotly.js improvements, read the plotly.js <a href="https://github.com/plotly/plotly.js">release notes</a>.</p>
+</div>
+<div id="modifying-plotly-graphs-via-plotlyproxy" class="section level2">
+<h2>Modifying plotly graphs via <code>plotlyProxy()</code></h2>
+<p>The design of <strong>plotly</strong>'s new proxy interface is inspired by similar interfaces in <strong>leaflet</strong> and <strong>DT</strong> (thanks Joe Cheng and Yihui Xie!). That is, <code>plotlyProxy()</code> initiates a proxy object just like <code>leafletProxy()</code>/<code>dataTableProxy()</code> by referencing a shiny output ID. However, at least for now, you <em>must</em> use the <code>plotlyProxyInvoke()</code> function to modify a <code>plotlyProxy()</code> object, which requires knowledge/use of a <a href="https://plot.ly/javascript/plotlyjs-function-reference/">plotly.js method</a> for the updating logic (among them, <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlyrestyle">Plotly.restyle</a>, <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlyrelayout">Plotly.relayout</a>, <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlyaddtraces">Plotly.addTraces</a>, and <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlydeletetraces">Plotly.deleteTraces</a> are the most widely useful). This simple shiny app uses <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlyrestyle">Plotly.restyle</a> to change the fillcolor of Canada (i.e., polygons) in response to the dropdown.</p>
+<div align="center">
+<p><img src="http://i.imgur.com/PzDMqZ0.gif" width=800 height=400 /></p>
+</div>
+<p>Notice how the map and the outline of Canada are not effected (i.e., are not redrawn) when the fill color changes. The code for the app is below. Notice how, instead of having <code>renderPlotly()</code> regenerate the map in response to a change in <code>input$color</code> (i.e., the "old" or "naive" way of updating a plotly graph which always uses <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlynewplot">Plotly.newPlot</a>), it uses <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlyrestyle">Plotly.restyle</a> via <code>plotlyProxyInvoke()</code> to perform a more efficient update.</p>
+<pre class="r"><code># you can also run this example via the new plotly_example() function!
+# plotly_example("shiny", "proxy_restyle_canada")
+
+library(shiny)
+library(plotly)
+
+ui <- fluidPage(
+  selectInput("color", "Canada's fillcolor", colors(), selected = "black"),
+  plotlyOutput("map")
+)
+
+server <- function(input, output, session) {
+  
+  output$map <- renderPlotly({
+    map_data("world", "canada") %>%
+      group_by(group) %>%
+      plot_mapbox(x = ~long, y = ~lat, color = I("black")) %>%
+      add_polygons() %>%
+      layout(
+        mapbox = list(center = list(lat = ~median(lat), lon = ~median(long)))
+      )
+  })
+  
+  observeEvent(input$color, {
+    plotlyProxy("map", session) %>%
+      plotlyProxyInvoke("restyle", list(fillcolor = toRGB(input$color)))
+  })
+  
+}
+
+shinyApp(ui, server)</code></pre>
+<p>It's worth noting that using <code>plotlyProxyInvoke()</code> requires knowledge of the <a href="https://plot.ly/r/reference/">figure reference</a> and the <a href="https://plot.ly/javascript/plotlyjs-function-reference/">plotly.js API</a>. Thus, it can help to have some knowledge of how your plots are actually represented in JSON, which you can always obtain via <code>plotly_json()</code>, for example:</p>
+<pre class="r"><code>p <- plot_ly(economics, x = ~pce, y = ~psavert, z = ~unemploy, color = ~as.numeric(date), mode = "markers+lines")
+plotly_json(p)</code></pre>
+<div align="center">
+<p><img src="http://i.imgur.com/7VQUsxC.gif" width=800 height=400 /></p>
+</div>
+<p>This gives us a glimpse into what the R package actually sends along to the <a href="https://plot.ly/javascript/plotlyjs-function-reference/#plotlyplot">newPlot method</a> to generate the initial view on page load. In this case, the R package generates scatter3d <a href="https://plot.ly/r/reference/#scatter3d-marker">marker</a> and <a href="https://plot.ly/r/reference/#scatter3d-line">line</a> objects. We could use a similar <code>plotlyProxyInvoke()</code> pattern as before to alter the value of certain attribute(s) of these objects (e.g., marker/line size/width):</p>
+<div align="center">
+<p><img src="http://i.imgur.com/jXLW2fz.gif" width=800 height=400 /></p>
+</div>
+<pre class="r"><code># you can also run this example via the new plotly_example() function!
+# plotly_example("shiny", "proxy_restyle_economics")
+
+library(shiny)
+library(plotly)
+
+ui <- fluidPage(
+  sliderInput("marker", "Marker size", min = 0, max = 20, value = 8),
+  sliderInput("path", "Path size", min = 0, max = 30, value = 2),
+  plotlyOutput("p")
+)
+
+server <- function(input, output, session) {
+  
+  output$p <- renderPlotly({
+    plot_ly(
+      economics, x = ~pce, y = ~psavert, z = ~unemploy, 
+      color = ~as.numeric(date), mode = "markers+lines"
+    )
+  })
+  
+  observeEvent(input$marker, {
+    plotlyProxy("p", session) %>%
+      plotlyProxyInvoke(
+        "restyle", 
+        # could also do list(marker = list(size = input$marker))
+        # but that overwrites the existing marker definition
+        # https://github.com/plotly/plotly.js/issues/1866#issuecomment-314115744
+        list(marker.size = input$marker)
+      )
+  })
+  
+  observeEvent(input$path, {
+    plotlyProxy("p", session) %>%
+      plotlyProxyInvoke(
+        "restyle", list(line.width = input$path)
+      )
+  })
+  
+}
+
+shinyApp(ui, server)</code></pre>
+<p>At this point, you might be wondering something along these lines of: "how on earth am I supposed to know/remember what attributes a scatter3d line object has?" One option is to search through the figure reference, but I prefer to use the <code>schema()</code> function since it allows me to more easily traverse the reference and get more information about acceptable/default attribute values. For example, when creating this app, I forgot what line attribute controlled its size/width, so I did the following:</p>
+<div align="center">
+<p><img src="http://i.imgur.com/vk4FxLI.gif" width=800 height=400 /></p>
+</div>
+<p>I hope you find this new release useful and this post informative for creating more performant shiny apps! If you're interested in seeing more examples of <code>plotlyProxy()</code> in action, see <a href="https://github.com/ropensci/plotly/blob/master/inst/examples/shiny/">here</a>.</p>
+</div>

@@ -1,0 +1,25 @@
+---
+title: "plotly 4.7.0 now on CRAN"
+date: "2017-05-30"
+categories: [plotly, R, shiny]
+---
+
+
+I’m super excited about plotly 4.7.0 – it includes numerous improvements and new features related to performance, mapping, and API requests. It also includes support for something <a href="https://twitter.com/hadleywickham/status/709025365558054912">folks have wanted for a very long time</a> – fixed coordinates via <code>ggplotly()</code>! In other words, if you use <code>coord_equal()</code>, <code>coord_fixed()</code>, etc to specify a ratio between the visual represntation of data units on positional axes (a key property of maps) in <strong>ggplot2</strong>, it should just work<sup>TM</sup> when converted via <code>ggplotly()</code>! It also has support for the stellar new <code>geom_sf()</code> – an official <strong>ggplot2</strong> geom that is so new, it is currently only available through the development version of <strong>ggplot2</strong>. For this and other reasons, I recommend using the development version of <strong>ggplot2</strong> if you can:
+<pre><code>devtools::install_github("tidyverse/ggplot2")
+install.packages("plotly")</code></pre>
+At plotcon Oakland, I held a <a href="https://cpsievert.github.io/plotcon17/workshop/">workshop</a> where I touched on why the new <strong>sf</strong> package and <code>geom_sf()</code> are so awesome for mapping in R, and <a href="https://cpsievert.github.io/plotcon17/workshop/day1/#14">how to make these maps interactive via <code>ggplotly()</code></a>. There are lots of other goodies in those workshop slides, such as <a href="https://cpsievert.github.io/plotcon17/workshop/day1/#43">embedding raster images</a>, converting <a href="https://cpsievert.github.io/plotcon17/workshop/day1/#44"><strong>ggmap</strong> plots</a>, an overview of <a href="https://cpsievert.github.io/plotcon17/workshop/day2/#4">animation</a>, <a href="https://cpsievert.github.io/plotcon17/workshop/day2/#15">highlighting</a>, and <a href="https://cpsievert.github.io/plotcon17/workshop/day2/#39">filtering</a>. Also, some of the “your turn” exercises show you how to combine these concepts to do neat stuff like <a href="https://gist.github.com/cpsievert/eca3ff3eba67ab6b4719c748dafd5c4a">outline geo-spatial polygons on hover</a> or <a href="https://gist.github.com/cpsievert/fa56bd89122e395803f30602b774dbe1">annotate geo-spatial polygons on click</a>:
+
+<div align="center" >
+  <img src="http://i.imgur.com/3m3dNgP.gif" width="600" height="342" />
+</div>
+
+Updating to 4.7.0 may also yield big speed improvements at print time, especially when plotting a large number of lines, paths, or polygons in a single trace. For a bit of context, this fairly simple example with 46 lines now takes a third of the time to print (about 1 instead of 3 seconds).
+<pre><code>plot_ly(txhousing) %>%
+  group_by(city) %>%
+  add_lines(x = ~date, y = ~median)</code></pre>
+The speed-up is a direct result of making (the previously internal, but now exported) function <code>group2NA()</code> much more efficient (huge thanks to Matt Summersgill for the help here). This function is used on any ggplot2 geom which can be reduced to a path or a polygon, so the impact should be large and widespread! This improvement was made possible through the new <strong>data.table</strong> dependency, which I hope to leverage more down the road to make other plots faster to print.
+
+This release also updates the plotly.js version from 1.26.1 to 1.27.1, so you can leverage the latest plotly.js features, such as <a href="https://plot.ly/r/parallel-coordinates-plot/">parallel coordinates</a> and <a href="https://gist.github.com/cpsievert/08a21b22904b96a6a2b5e7cf24d4fdd0">Sankey diagrams</a>. Numerous other improvements and bug fixes (especially for <code>api_create()</code>) are coming with this release, please see the <a href="https://github.com/ropensci/plotly/blob/master/NEWS.md">NEWS</a> file for more info.
+
+Happy plotting!

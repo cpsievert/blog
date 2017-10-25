@@ -1,0 +1,156 @@
+---
+title: "Upgrading to plotly 4.0 (and above)"
+date: "2016-09-26"
+categories: [plotly, R, shiny]
+---
+
+
+<p>I’m excited to announce that plotly’s R package just sent its first CRAN update in nearly four months. To install the update, run <code>install.packages("plotly")</code>.</p>
+<p>This update has breaking changes, enables new features, fixes numerous bugs, and takes us from version 3.6.0 to 4.5.2. To see all the changes, I encourage you to read the <a href="https://github.com/ropensci/plotly/blob/master/NEWS.md">NEWS file</a>. In this post, I’ll highlight the most important changes, explain why they needed to happen, and provide some tips for fixing errors brought about by this update. As you’ll see, this update is mostly about improving the <code>plot_ly()</code> interface, so <code>ggplotly()</code> users won’t notice much (if any) change. I’ve also started a <a href="https://cpsievert.github.io/plotly_book/">plotly for R book</a> which provides more narrative than the documentation on <a href="https://plot.ly/r" class="uri">https://plot.ly/r</a> (which is now updated to 4.0), more recent examples, and features exclusive to the R package. The first three chapters are nearly finished and replace the package vignettes. The later chapters are still in their beginning stages – they discuss features that are still under development, but I plan adding stability, and more documentation in the coming months.</p>
+<div id="formula-mappings" class="section level2">
+<h2>Formula mappings</h2>
+<p>In the past, you could use an <em>expression</em> to reference variable(s) in a data frame, but this no longer works. Consequently, you might see an error like this when you update:</p>
+<pre class="r"><code>library(plotly)
+plot_ly(mtcars, x = mpg, y = sqrt(wt))</code></pre>
+<pre><code>## Error in plot_ly(mtcars, x = mpg, y = sqrt(wt)): object 'wt' not found</code></pre>
+<p><code>plot_ly()</code> now requires a <em>formula</em> (which is basically an expression, but with a <code>~</code> prefixed) when referencing variables. You do not <em>have to</em> use a formula to reference objects that exist in the namespace, but I recommend it, since it helps populate sensible axis/guide title defaults (e.g., compare the output of <code>plot_ly(z = volcano)</code> with <code>plot_ly(z = ~volcano)</code> ).</p>
+<pre class="r"><code>plot_ly(mtcars, x = ~mpg, y = ~sqrt(wt))</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14541.embed" width="600" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>There are a number of technical reasons why imposing this change from expressions to formulas is a good idea. If you’re interested in the details, I recommend reading <a href="https://rpubs.com/hadley/lazyeval">Hadley Wickham’s notes</a> on non-standard evaluation, but here’s the gist of the situation:</p>
+<ol style="list-style-type: decimal">
+<li>Since formulas capture the environment in which they are created, we can be confident that evaluation rules are always correct, no matter the context.</li>
+<li>Compared to expressions/symbols, formulas are easier to program with, which makes writing custom functions around <code>plot_ly()</code> easier.</li>
+</ol>
+<pre class="r"><code>myPlot <- function(x, y, ...) {
+  plot_ly(mtcars, x = x, y = y, color = ~factor(cyl), ...)
+}
+myPlot(~mpg, ~disp, colors = "Dark2")</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14543.embed" width="600" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>Also, it’s fairly easy to convert a string to a formula (e.g., <code>as.formula("~sqrt(wt)")</code>). This trick can be quite useful when programming in shiny (and a variable mapping depends on an input value).</p>
+</div>
+<div id="smarter-defaults" class="section level2">
+<h2>Smarter defaults</h2>
+<p>Instead of always defaulting to a “scatter” trace, <code>plot_ly()</code> now infers a sensible trace type (and other attribute defaults) based on the information provided. These defaults are determined by inspecting the vector type (e.g., numeric/character/factor/etc) of positional attributes (e.g., x/y). For example, if we supply a discrete variable to x (or y), we get a vertical (or horizontal) bar chart:</p>
+<pre class="r"><code>subplot(
+  plot_ly(diamonds, y = ~cut, color = ~clarity),
+  plot_ly(diamonds, x = ~cut, color = ~clarity),
+  margin = 0.07
+) %>% hide_legend() </code></pre>
+<iframe src="https://plot.ly/~cpsievert/14545.embed" width="900" height="500" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>Or, if we supply two discrete variables to both x and y:</p>
+<pre class="r"><code>plot_ly(diamonds, x = ~cut, y = ~clarity)</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14547.embed" width="800" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>Also, the order of categories on a discrete axis, by default, is now either alphabetical (for character strings) or matches the ordering of factor levels. This makes it easier to sort categories according to something meaningful, rather than the order in which the categories appear (the old default). If you prefer the old default, use <code>layout(categoryorder = "trace")</code></p>
+<pre class="r"><code>library(dplyr)
+# order the clarity levels by their median price
+d <- diamonds %>%
+  group_by(clarity) %>%
+  summarise(m = median(price)) %>%
+  arrange(m)
+diamonds$clarity <- factor(diamonds$clarity, levels = d[["clarity"]])
+plot_ly(diamonds, x = ~price, y = ~clarity, type = "box")</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14549.embed" width="800" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+</div>
+<div id="plot_ly-now-initializes-a-plot" class="section level2">
+<h2><code>plot_ly()</code> now <em>initializes</em> a plot</h2>
+<p>Previously <code>plot_ly()</code> <em>always</em> produced at least one trace, even when using <code>add_trace()</code> to add on more traces (if you’re familiar with ggplot2 lingo, a trace is similar to a layer). From now on, you’ll have to specify the <code>type</code> in <code>plot_ly()</code> if you want it to always produce a trace:</p>
+<pre class="r"><code>subplot(
+  plot_ly(economics, x = ~date, y = ~psavert, type = "scatter") %>% 
+    add_trace(y = ~uempmed) %>%
+    layout(yaxis = list(title = "Two Traces")),
+  plot_ly(economics, x = ~date, y = ~psavert) %>% 
+    add_trace(y = ~uempmed) %>% 
+    layout(yaxis = list(title = "One Trace")),
+  titleY = TRUE, shareX = TRUE, nrows = 2
+) %>% hide_legend()</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14551.embed" width="800" height="600" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>Why enforce this change? Often times, when composing a plot with multiple traces, you have attributes that are shared across traces (i.e., global) and attributes that are not. By allowing <code>plot_ly()</code> to simply initialize the plot and define global attributes, it makes for a much more natural to describe such a plot. Consider the next example, where we declare x/y (longitude/latitude) attributes and alpha transparency globally, but alter trace specific attributes in <code>add_trace()</code>-like functions. This example also takes advantage of a few other new features:</p>
+<ol style="list-style-type: decimal">
+<li>The <code>group_by()</code> function which defines “groups” within a trace (described in more detail in the next section).</li>
+<li>New <code>add_*()</code> functions which behave like <code>add_trace()</code>, but are higher-level since they assume a trace type, might set some attribute values (e.g., <code>add_marker()</code> set the scatter trace mode to marker), and might trigger other data processing (e.g., <code>add_lines()</code> is essentially the same as <code>add_paths()</code>, but guarantees values are sorted along the x-axis).</li>
+<li>Scaling is avoided for “AsIs” values (i.e., values wrapped with <code>I()</code>) which makes it easier directly specify a constant value for a visual attribute(s) (as opposed to mapping data values to visuals).</li>
+<li>More support for R’s graphical parameters such as <code>pch</code> for symbols and <code>lty</code> for linetypes.</li>
+</ol>
+<pre class="r"><code>map_data("world", "canada") %>%
+  group_by(group) %>%
+  plot_ly(x = ~long, y = ~lat, alpha = 0.1) %>%
+  add_polygons(color = I("black"), hoverinfo = "none") %>%
+  add_markers(color = I("red"), symbol = I(17),
+              text = ~paste(name, "<br />", pop),
+              hoverinfo = "text", data = maps::canada.cities) %>%
+  hide_legend()</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14553.embed" width="800" height="350" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+</div>
+<div id="new-interpretation-of-group" class="section level2">
+<h2>New interpretation of group</h2>
+<p>The <code>group</code> argument in <code>plot_ly()</code> has been removed in favor of the <code>group_by()</code> function. In the past, the <code>group</code> argument <a href="https://github.com/ropensci/plotly/issues/381">incorrectly</a> <a href="https://github.com/ropensci/plotly/issues/381">created</a> multiple traces. If you want that same behavior, use the new <code>split</code> argument, but groups are now used to define “gaps” <em>within</em> a trace. This is more consistent with how ggplot2’s <code>group</code> aesthetic is translated in <code>ggplotly()</code>, and is much more efficient than plotting a trace for each group.</p>
+<pre class="r"><code>txhousing %>%
+  group_by(city) %>%
+  plot_ly(x = ~date, y = ~median) %>%
+  add_lines(alpha = 0.3)</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14555.embed" width="800" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>The default <a href="http://plot.ly/r/reference/#layout-hovermode">hovermode</a> (compare data on hover) isn’t super useful here since we have only 1 trace to compare, so you may want to add <code>layout(hovermode = "closest")</code> when using <code>group_by()</code>. If you’re group sizes aren’t that large, you may want to use <code>split</code> to generate one trace per group, then set a constant color (using the <code>I()</code> function to avoid scaling).</p>
+<pre class="r"><code>txhousing %>%
+  plot_ly(x = ~date, y = ~median) %>%
+  add_lines(split = ~city, color = I("steelblue"), alpha = 0.3)</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14557.embed" width="800" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>In the coming months, we will have better ways to identify/highlight groups to help combat overplotting (see <a href="http://rpubs.com/cpsievert/212318">here</a> for example). This same interface can be used to coordinate multiple linked plots, which is a powerful tool for exploring multivariate data and presenting multivariate results (see <a href="http://rpubs.com/cpsievert/206872">here</a> and <a href="http://rpubs.com/cpsievert/204407">here</a> for examples).</p>
+</div>
+<div id="new-plotly-object-representation" class="section level2">
+<h2>New plotly object representation</h2>
+<p>Prior to version 4.0, plotly functions returned a data frame with special attributes attached (needed to track the plot’s attributes). At the time, I thought this was the right way to enable a “data-plot-pipeline” where a plot is described as a sequence of visual mappings and data manipulations. For a number of reasons, I’ve been convinced otherwise, and decided the central plotly object should inherit from an htmlwidget object instead. This change does not destroy our ability to implement a “data-plot-pipeline”, but it does, in a sense, constrain the set manipulations we can perform on a plotly object. Below is a simple example of transforming the data underlying a plotly object using <strong>dplyr</strong>’s <code>mutate()</code> and <code>filter()</code> verbs (the plotly book has a whole <a href="https://cpsievert.github.io/plotly_book/a-case-study-of-housing-sales-in-texas.html#the-data-plot-pipeline">section on the data-plot-pipeline</a>, if you’d like to learn more).</p>
+<pre class="r"><code>library(dplyr)
+economics %>%
+  plot_ly(x = ~date, y = ~unemploy / pop, showlegend = F) %>%
+  add_lines(linetype = I(22)) %>%
+  mutate(rate = unemploy / pop) %>% 
+  slice(which.max(rate)) %>%
+  add_markers(symbol = I(10), size = I(50)) %>%
+  add_annotations("peak")</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14559.embed" width="800" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+<p>In this context, I’ve often found it helpful to inspect the (most recent) data associated with a particular plot, which you can do via <code>plotly_data()</code></p>
+<pre class="r"><code>diamonds %>%
+  group_by(cut) %>%
+  plot_ly(x = ~price) %>%
+  plotly_data()</code></pre>
+<pre><code>## Source: local data frame [53,940 x 10]
+## Groups: cut [5]
+## 
+##    carat       cut color clarity depth table price     x     y     z
+##    <dbl>     <ord> <ord>   <ord> <dbl> <dbl> <int> <dbl> <dbl> <dbl>
+## 1   0.23     Ideal     E     SI2  61.5    55   326  3.95  3.98  2.43
+## 2   0.21   Premium     E     SI1  59.8    61   326  3.89  3.84  2.31
+## 3   0.23      Good     E     VS1  56.9    65   327  4.05  4.07  2.31
+## 4   0.29   Premium     I     VS2  62.4    58   334  4.20  4.23  2.63
+## 5   0.31      Good     J     SI2  63.3    58   335  4.34  4.35  2.75
+## 6   0.24 Very Good     J    VVS2  62.8    57   336  3.94  3.96  2.48
+## 7   0.24 Very Good     I    VVS1  62.3    57   336  3.95  3.98  2.47
+## 8   0.26 Very Good     H     SI1  61.9    55   337  4.07  4.11  2.53
+## 9   0.22      Fair     E     VS2  65.1    61   337  3.87  3.78  2.49
+## 10  0.23 Very Good     H     VS1  59.4    61   338  4.00  4.05  2.39
+## # ... with 53,930 more rows</code></pre>
+<p>To keep up to date with currently supported data manipulation verbs, please consult the <code>help(reexports)</code> page, and for more examples, check out the examples section under <code>help(plotly_data)</code>.</p>
+<p>This change in the representation of a plotly object also has important implications for folks using <code>plotly_build()</code> to “manually” access or modify a plot’s underlying spec. Previously, this function returned the JSON spec as an R list, but it now returns more “meta” information about the htmlwidget, so in order to access that same list, you have to grab the “x” element. The new <code>as_widget()</code> function (different from the now deprecated <code>as.widget()</code> function) is designed to turn a plotly spec into an htmlwidget object.</p>
+<pre class="r"><code># the style() function provides a more elegant way to do this sort of thing,
+# but I know some people like to work with the list object directly...
+pl <- plotly_build(qplot(1:10))[["x"]]
+pl$data[[1]]$hoverinfo <- "none"
+as_widget(pl)</code></pre>
+<iframe src="https://plot.ly/~cpsievert/14561.embed" width="800" height="300" id="igraph" scrolling="no" seamless="seamless" frameBorder="0">
+</iframe>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>The latest CRAN release upgrades plotly’s R package from version 3.6.0 to 4.5.2. This upgrade includes a number of breaking changes, as well as a ton of new features and bug fixes. The time spent upgrading your code will be worth it as enables <a href="https://github.com/ropensci/plotly/blob/eae4c9180feb502e30f25fe227c00c0cb02e20a7/NEWS.md#400----13-june-2016">a ton of new features</a>. It also provides a better foundation for advancing the <code>plot_ly()</code> interface (not to mention the <a href="https://cpsievert.github.io/plotly_book/advanced-interactive-techniques.html">linked highlighting</a> stuff we have on tap). This post should provide the information necessary to fix these breaking changes, but if you have any trouble upgrading, please let us know on <a href="http://community.plot.ly" class="uri">http://community.plot.ly</a>. Happy plotting!</p>
+</div>
+
