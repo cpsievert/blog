@@ -1,4 +1,5 @@
 # Carson's Personal Blog
 
-<https://cpsievert.me>
+<https://blog.cpsievert.me>
 
+Powered by [blogdown](https://github.com/rstudio/blogdown)
