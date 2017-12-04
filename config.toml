@@ -2,7 +2,7 @@
 baseurl = "/"
 relativeurls = true
 languageCode = "en-us"
-title = "The personal website of Carson Sievert"
+title = "Carson's blog on R, RStudio, plotly, shiny, data visualization, statistics, etc"
 theme = "hugo-lithium-theme"
 googleAnalytics = "UA-60116966-2"
 # TODO: just enable comments on blog posts?
@@ -23,7 +23,7 @@ RSSLink = true
     weight = 1
 
 [params]
-    description = "The personal website of Carson Sievert"
+    description = "Carson's blog on R, RStudio, plotly, shiny, data visualization, statistics, etc"
 
     # options for highlight.js (version, additional languages, and theme)
     highlightjsVersion = "9.11.0"

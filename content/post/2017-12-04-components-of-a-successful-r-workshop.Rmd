@@ -1,0 +1,57 @@
+---
+title: Components of a successful R workshop
+author: Carson Sievert
+date: '2017-12-04'
+slug: components-of-a-successful-r-workshop
+categories:
+  - plotly
+  - docker
+  - interactive visualization
+  - R
+  - shiny
+tags: []
+---
+
+<p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;" >
+  <b>
+  [My next workshop](https://workshops.cpsievert.me/20180303/) is in [March at Plotly HQ in Montréal](https://plotcon.plot.ly/) `r emo::ji("snowflake")`. <br /> [I'm also available](https://consulting.cpsievert.me/) for R training and general consulting.
+  </b>
+</p>
+
+I had an absolute blast running [a 2-day R workshop in NYC](https://workshops.cpsievert.me/20171118/) last week at plotcon. It was perhaps even more rewarding and fulfilling than [my previous plotcon workshop](https://github.com/cpsievert/plotcon17) -- I saw more attendees grasping concepts, accomplishing exercises, asking great questions, and most importantly, modifying code examples to analyze their own data. There are a few things I think I improved upon this year which helped contribute to the success, so I thought I would share some ideas that can generalize to other R (or, even more generally, data scienc-y) workshops.
+
+## Inspire first `r emo::ji("astonished")`, mindful explanation later `r emo::ji("tipping_hand_woman")`
+
+To spark genuine interest and enthusiasm, it's important to first demonstrate the power of the tools covered in the workshop. For my 'plotly for R' workshop, which is more specifically about 'creating & using interactive graphics for exploratory data analysis (EDA)', I first focus on the power of *using* interactive graphics to [perform](https://vimeo.com/202650161) [analysis](https://vimeo.com/239695664) [tasks](https://vimeo.com/202647310). In an EDA context though, that power depends on the amount of [friction involved with *creating* graphics](https://talks.cpsievert.me/20170803), since during EDA we don't immediately know which graphics are informative, and likely have to iterate through many uninteresting graphics to find interesting ones.
+
+With this [delicate balance](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.31.1928) in mind, I like taking a 'solution first' approach that focuses first and foremost on the visuals and analysis (i.e., *using* interactive graphics), and then move on to explain the programming details (i.e., *creating* interactive graphics). I also try to be mindful of what knowledge is required to understand the implementation when ordering the workshop content, so I can introduce programming concepts as I need them, but also have a clear motivation as to *why* they're needed. I also think basing the implementation on [tidy-data principles](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html) is almost always a good idea since you'll likely be able to reuse those principles and concepts in several different contexts which should help convince your audience that *they* can do [powerful things quickly](http://varianceexplained.org/r/teach-hard-way/).
+
+## Encourage curiosity about data `r emo::ji("thinking")` `r emo::ji("bar_chart")`
+
+A big reason why I like this "solution first" approach is that attendees are less likely to get overwhelmed with programming details and more likely to ask interesting data analysis related questions. It also encourages a more natural train of thought for analysts; where questions derive from curiosity about the data, not the software tool. As a result, attendees tend to ask more creative questions that are not necessarily bound to technology restrictions, and thus, I often get questions that I've never considered about data that I know quite well! These questions often take the form: "Given that we've seen X, I wonder if Y is true? Can plotly do Z [to answer question Y]?". This leads to a much more fruitful discussion (for everyone!) than if I were just to explain that plotly can do Z.
+
+Furthermore, by keeping the focus on asking questions about data, attendees are more likely to apply what they've learned to their own data. In fact, one attendee said the following:
+
+"Carson was very good in answering questions about specific use cases related to our own projects..so that always helps when you are able to see that **techniques being presented can be made to work in context of your own datasets.**"
+
+## Understand your audience `r emo::ji("female_detective")`
+
+On a more general level, it seems the reason why this "solution first" approach works so well is because learning a new language is hard, but it can be made easier by building upon existing language or knowledge. So, of course, before preparing workshop materials, I always take some time to understand the audience. I do this by asking attendees to fill out a survey about their background several weeks before the workshop, so I can focus on concepts that I think will be most widely useful.
+
+## Encourage collaboration `r emo::ji("woman_technologist")` `r emo::ji("man_technologist")`
+
+In addition to asking attendees to fill out a survey several weeks beforehand, I also invite them to a Slack group, mainly for the ease of communication and knowledge sharing during the workshop, but also to encourage interaction before, during, and after the workshop. In fact, my very first *your turn exercise*[^1] requires everyone to send me and their neighbor (via Slack) three things they hope to take away from the workshop. This way I can make sure everyone is on Slack which seems to increase the amount of collaboration among everyone.
+
+[^1]: Your turn exercises are largely designed to reinforce important concepts and break up the lecture every 10-20 minutes.
+
+## Bring your work environment to them `r emo::ji("briefcase")` `r emo::ji("laptop")`
+
+Before the workshop, I also ask attendees to download my [cpsievert/workshops](https://hub.docker.com/r/cpsievert/workshops/) Docker image on the machine that they plan on bringing. This way, in theory, we don't waste any time on setup, and attendees have immediate access to a computational environment with all the materials and software dependencies for following demos and performing exercises. Moreover, since this image builds off of [rocker/rstudio](https://hub.docker.com/r/rocker/rstudio/), they can also easily run RStudio via their web browser which provides a nice and consistent user experience. In practice, I've found about 1 in 4 attendees actually try to get Docker setup before the workshop, but with a little time and help, almost everyone can get it working. 
+
+That being said, there are bound to be issues that are difficult to immediately resolve (e.g., not enough disk space on the host machine), so in that case, I provide a USB with the workshop materials, and `r emo::ji("pray")` they can install the required software (in theory, if you include a [DESCRIPTION](http://r-pkgs.had.co.nz/description.html) file with all your R dependencies for the workshop, they can `devtools::install()` R packages, but you'll still likely run into system dependency issues).
+
+In the future, I may experiment with hosting workshop containers on the cloud, so that attendees can just visit a web link to follow along, but I'm not sure if the convenience is necessarily worth the cost.
+
+## Looking forward `r emo::ji("crystal_ball")`
+
+I really enjoy running R workshops and hope to continue improving and developing more of them. This is especially true of the 'plotly for R' workshop -- it's incredibly fulfilling to have others find your work useful for accomplishing their own work. Longer term though I'd like to spend more time developing other workshops that dive deeper into different aspects of the [tidyverse](https://www.tidyverse.org/), [shiny](http://shiny.rstudio.com/), statistical modeling, and more. In fact, I'll be attending RStudio's "train the trainer" workshop (and giving a talk!) during [rstudio::conf](https://www.rstudio.com/conference/) this year which I hope will give me more and better ideas for running successful R workshops. Hope to see you there!
