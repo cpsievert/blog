@@ -1,0 +1,320 @@
+---
+title: Learning from and improving upon ggplotly conversions
+author: Carson Sievert
+date: '2018-01-30'
+slug: learning-improving-ggplotly-geom-sf
+categories:
+  - plotly
+  - ggplot2
+tags: []
+---
+
+<p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;" >
+  <b>
+    Want to master plotly for R and shiny? [Attend my two-day workshop](https://plotcon.plot.ly/workshops/r-shiny-dash-r)!
+  </b>
+</p>
+
+As the maintainer of the R package [**plotly**](https://github.com/ropensci/plotly), I'm certainly aware that `ggplotly()` is not perfect.[^1] And, even when conversion from **ggplot2** to **plotly** 'works' it can leave some things to be desired. For example, it might take a while to render, it might not look exactly the way **ggplot2** does, and/or the default interactive properties (e.g., tooltips) might not work the way you want them to. In almost every case, these are issues that, with a bit of knowledge about **plotly** and the underlying [plotly.js](https://github.com/plotly/plotly.js) library, you can fix. That's because, as long as `ggplotly()` returns an object, we can inspect its underlying data structure (which, by the way, is useful for learning plotly.js!) and improve on it by modifying that data.[^2] This post explores several ways to learn from, leverage, and improve `ggplotly()` conversions of **ggplot2**'s `geom_sf()` (which is still in development), but some of the same lessons can apply more generally to other **ggplot2** geoms.
+
+[^1]: I still believe supporting ~99% of the ggplot2 API is achievable (we're currently at about 80%), but we don't have the funding/bandwidth for it currently. If you have any interest at all in supporting this effort, please [get in touch](mailto:cpsievert1@gmail.com).
+
+[^2]: I've already [written a bit about how this idea](https://plotly-book.cpsievert.me/extending-ggplotly.html) in the [plotly book](https://plotly-book.cpsievert.me/), but I thought I'd make a more detailed guide for this sort of thing. 
+
+### Basic intro to `geom_sf()`
+
+For a quick demonstration of `geom_sf()`, I'm using [**albersusa**](https://github.com/hrbrmstr/albersusa) to access the [laea projected](https://en.wikipedia.org/wiki/Lambert_azimuthal_equal-area_projection) boundaries of the United States as a [simple features (sf) data structure](https://cran.r-project.org/web/packages/sf/vignettes/sf1.html), but **sf** also makes it easy to [read various file formats](https://www.rdocumentation.org/packages/sf/versions/0.6-0/topics/st_read) and even [convert various spatial objects to **sf**](https://www.rdocumentation.org/packages/sf/versions/0.6-0/topics/st_as_sf). There are also a bunch of other R packages that, like **albersusa**, make it easy to query geo-spatial data as an **sf** data. The "Reverse dependencies" section of [sf's CRAN page](https://cran.r-project.org/package=sf) is a good place to discover them, but just to name a few: [**tidycensus**](https://cran.r-project.org/package=tidycensus), [**rnaturalearth**](https://cran.r-project.org/package=rnaturalearth), and [**mapsapi**](https://cran.r-project.org/package=mapsapi). One awesome consequence of using **sf** is that, since the data structure contains all the geo-spatial information, both `plot()` and `geom_sf()` just work<sup><small>TM</small></sup>.
+
+```r
+# to replicate these examples, you currently need the dev version
+# devtools::install_github('ropensci/plotly')
+# devtools::install_github('hrbrmstr/albersusa')
+library(plotly)
+library(albersusa)
+
+us_laea <- usa_sf("laea")
+p <- ggplot(us_laea) + geom_sf()
+ggplotly(p)
+```
+
+<a href="/01-map.html" target="_blank">
+  <img src="https://i.imgur.com/nGq1FFi.png" width="100%"/>
+</a>
+
+The most brilliant thing about [**sf**](https://cran.r-project.org/package=sf) is that it stores [geo-spatial structures](https://cran.r-project.org/web/packages/sf/vignettes/sf1.html#sfg-simple-feature-geometry) in a special [list-column](https://jennybc.github.io/purrr-tutorial/ls13_list-columns.html) of a data frame. This allows each row to represent the real unit of observation/interest -- whether be a polygon, multi-polygon, point, line, or even a collection of these features -- and as a result, supports workflows that leverage [tidy-data](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html) principles[^3]. 
+
+In our case, the `us_laea` data contains 51 rows (50 states + DC), and the `geometry` column tracks info about the geo-spatial objects:
+
+[^3]: Jenny Bryan has a [superb talk](https://www.youtube.com/watch?v=4MfUCX_KpdE) on leveraging and embracing list-columns.
+
+```r
+library(dplyr)
+select(us_laea, name, pop_2014, geometry)
+```
+
+```r
+Simple feature collection with 51 features and 2 fields
+geometry type:  MULTIPOLYGON
+dimension:      XY
+bbox:           xmin: -2100000 ymin: -2500000 xmax: 2516374 ymax: 732103.3
+epsg (SRID):    NA
+proj4string:    +proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs
+First 10 features:
+                   name pop_2014                       geometry
+1               Arizona  6731484 MULTIPOLYGON (((-1111066 -8...
+2              Arkansas  2966369 MULTIPOLYGON (((557903.1 -1...
+3            California 38802500 MULTIPOLYGON (((-1853480 -9...
+4              Colorado  5355866 MULTIPOLYGON (((-613452.9 -...
+5           Connecticut  3596677 MULTIPOLYGON (((2226838 519...
+6  District of Columbia   658893 MULTIPOLYGON (((1960720 -41...
+7               Georgia 10097343 MULTIPOLYGON (((1379893 -98...
+8              Illinois 12880580 MULTIPOLYGON (((868942.5 -2...
+9               Indiana  6596855 MULTIPOLYGON (((1279733 -39...
+10            Louisiana  4649676 MULTIPOLYGON (((1080885 -16...
+```
+
+Compared to [older workflows](https://gis.stackexchange.com/questions/165974/r-fortify-causing-polygons-to-tear) (e.g., `fortify()` + `geom_polygon()`), this is a way more convenient and intuitive data structure (especially if your real unit of interest is the state). Moreover, **sf** tracks additional information about the coordinate system and bounding box which ensures your aspect ratios are always correct and also makes it easy transform and simplify those features (more on this later). It's worth noting that **sf** is still very new, and improvements are constantly being made -- to keep updated, check out the [r-spatial](http://r-spatial.org/) blog.
+
+### Tools for improving upon `ggplotly()` conversions
+
+Yes, `ggplotly()` converts [the map](/01-map.html) 'correctly', but it does take a while to print, and for some reason, no tooltip appears when hovering over the map. To investigate why, lets examine the [JSON](https://www.json.org/) that **plotly** sends along to plotly.js to render the map. This can be done via the `plotly_json()` function, which is useful for seeing how *any* R **plotly** object is serialized as JSON. This JSON represents what we call a *figure*, which is comprised of numerous components -- the most important of which are: *layout* (for controlling axes, labels, titles, etc) and *data* (a collection of *traces*, each of which defines a mapping from data to visuals).[^4]
+
+[^4]: `plotly_json()` also gives one insight into R-specific components, such as *highlight* (for controlling [highlighting options in multiple linked views](https://plotly-book.cpsievert.me/linking-views-without-shiny.html)) and *attrs* (for lazy evaluation of [data -> visual mappings in `plot_ly()`](https://plotly-book.cpsievert.me/scatter-traces.html)).
+
+```r
+# prints an interactive htmlwidget if you have listviewer
+# install.packages('listviewer')
+plotly_json(p)
+```
+
+<a href="/02-json.html" target="_blank">
+  <img src="https://i.imgur.com/Lm3qqDX.png" />
+</a>
+
+[Inspecting](/02-json.html) the data component, we see that the map contains two `'scatter'` traces, both with a mode of `'lines'`. The first trace is the [graticule](https://en.wikipedia.org/wiki/Geographic_coordinate_system) behind the states and the second trace contains the state outlines which contain over 50,000+ x/y (i.e., lat/lon) positions! This is certainly not the most efficient way to create such a map and there are several ways we could improve upon it without abandoning the comfort of `geom_sf()`.[^5] Before we dive into those improvements, lets first consider what happens when **plotly** generates a plot.
+
+[^5]: **plotly** offers other "native" mapping options such as [`plot_geo()`](https://plot.ly/r/scatter-plots-on-maps/) and [`plot_mapbox()`](https://plot.ly/r/scattermapbox/), which generally speaking are more performant, but they only offer a limited set of projections and/or resolutions (with `geom_sf()` you won't run into the same limitations).
+
+Whether you're printing the result of `ggplotly()`, `plot_ly()`, or generally any R [htmlwidget](http://www.htmlwidgets.org/), there are two main steps that occur: a *build* (i.e. compile) and *render* step. Roughly speaking, the build step translates R code to an R list. That list is then [serialized](https://en.wikipedia.org/wiki/Serialization) as JSON (via `jsonlite::toJSON()`) and should match a JSON specification (i.e. schema) defined by the JavaScript library (which uses the JSON to render the widget).
+
+<img src="/printing.svg" width="100%" />
+
+If you've ever found `ggplotly()` slow to print, chances are, the bulk of the time is spent *building* the R list and *sending* the JSON to plotly.js. For many htmlwidgets, the build time is negligible, but for more complex widgets like **plotly**, a lot of things need to happen, especially for `ggplotly()` since we call `ggplot2::ggplot_build()`, then [crawl and map that data structure to plotly.js](https://blog.cpsievert.me/2014/06/01/visualizing-ggplot2-internals-with-shiny-and-d3/). In a [shiny](http://shiny.rstudio.com/) app, both the build and render stages are required on initial load, but the new [`plotlyProxy()` interface](https://blog.cpsievert.me/2017/07/13/plotly-4.7.1-now-on-cran) provides a way to 'cache' expensive build (and render!) operation and update a graph by modifying just specific components of the figure (via [plotly.js functions](https://plot.ly/javascript/plotlyjs-function-reference/)). Outside of a 'reactive context' like shiny, you could use `htmlwidgets::saveWidget()` to 'cache' the results of the build step to disk, send the file to someone else (or host it online somewhere), then only the render step is required to view the graph.
+
+A quick and easy way to try and improve *render* performance is to use [canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)-based rendering (instead of vector-based SVG) with `toWebGL(p)`. Switching from vector to canvas is generally a good idea when dealing with >30,000 vectors, but in this case, we're only dealing with [a couple hundred vector paths](https://i.imgur.com/jc0doQA.png), so switching from vector to canvas for our map won't significantly improve rendering performance, and in fact, we'll lose some nice SVG exclusive features (the plotly.js team is getting close to [eliminating these limitations](https://github.com/plotly/plotly.js/issues/130)!). Instead, what we could (and should!) do is reduce the amount of points along to each path (technically speaking, we'll reduce the complexity of the SVG [d attribute](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d)).
+
+Thankfully, the **sf** package provides `st_simplify()` function that may be used to simplify polygons while still preserving their shape. A bit of trial and error is involved, but the idea is that by increasing the value of the `dTolerance` argument, you'll decrease the number of points required to draw the spatial features. For fun, before simplifying, lets leverage some more **sf** awesomeness, `st_transform()`. This function allows us to transform our features to *any* projection via the [proj4](http://proj4.org/) standard. Here I'll transform from laea to [lcc](https://gis.stackexchange.com/a/141588), and in this case, a `dTolerance` of `10000` simplifies from roughly 50,000 to 2,500 points. On my machine, that cuts the build and render time in half and reduces the HTML/JSON file size from 1.7MB to 125.9KB.
+
+```r
+library(sf)
+us_lcc <- usa_sf("laea") %>%
+  st_transform("+proj=lcc +lat_1=33 +lat_2=45 +lat_0=39 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs") %>%
+  st_simplify(TRUE, dTolerance = 10000)
+  
+plotly_json(ggplot(us_lcc) + geom_sf())
+```
+
+<a href="/02-json-b.html" target="_blank">
+  <img src="https://i.imgur.com/9qd58g8.png" />
+</a>
+
+Now that we've simplified the borders, lets look into why there is no hover information. Since `hoverinfo='text'`, plotly.js just shows the `text` attribute in the tooltip, but that attribute is blank! It's blank because, by default, `ggplotly()` puts all aesthetic mapping information in the `text` field, but we haven't actually used an aesthetic mapping here (`geom_sf()` is weird in that way -- it is the only geom that doesn't require any aesthetics)! We'll eventually use aesthetic mappings with `geom_sf()` to create a [choropleth](https://en.wikipedia.org/wiki/Choropleth_map) map, but before we do, lets find out what the other trace attributes are doing (and find other relevant ones).
+
+If you're ever wondering what a particular attribute means (e.g., `text`, `fill`, `fillcolor`, `hoveron`, etc), you can look up the description online by going to https://plot.ly/r/reference/#[type]-[attr] for a specific trace `[type]` and attribute `[attr]` (e.g. <https://plot.ly/r/reference/#scatter-fill>). The online reference is nice, but I prefer to use the `schema()` function for a few reasons:
+
+* `schema()` provides a bit more information than the online docs (e.g., value types, default values, acceptable ranges, etc).
+* The interface makes it a bit easier to traverse and *discover* new attributes.
+* You can be absolutely sure it matches the version used in the R package (the online docs might use a different -- probably older -- version).
+
+```r
+schema()
+```
+
+<a href="/03-schema.html" target="_blank">
+  <img src="https://i.imgur.com/XqbTTFA.png" />
+</a>
+
+[Go ahead and have a look](/03-schema.html) under "traces" -> "scatter" -> "attributes". These are all the attributes that may be used to control the appearance and interactive properties of a scatter trace. I won't bother going through descriptions (you can see those for yourself by expanding an attribute), but I will demonstrate how we can leverage the `style()` function to modify just the state border's attributes (specifying `traces=2` ensures these changes are only applies to the second trace).
+
+```r
+gg <- ggplotly(ggplot(us_lcc) + geom_sf())
+style(
+  gg, traces = 2, 
+  mode = "markers+lines",
+  hoverinfo = "x+y", 
+  fillcolor = "transparent",
+  hoverlabel = list(bgcolor = "white")
+)
+```
+
+<a href="/01-map-modified.html" target="_blank">
+  <img src="https://i.imgur.com/1l6IMab.png" width="100%"/>
+</a>
+
+### Leveraging plotly's interactive features 
+
+After that deep dive into how `ggplotly()` works under the hood, and tips for improving rendering performance, let's explore some lesser known, yet powerful `ggplotly()` features. As a side note, anything that can be done via `ggplotly()`, you can also do via `plot_ly()` (but not necessarily the other way round!) -- it just might be more effort to do so. And, sometimes this extra effort is worth it, because `ggplotly()` isn't really designed to be re-sized without being re-printed ([get in touch](mailto:cpsievert1@gmail.com) if you want to help us solve this and [other big issues](https://github.com/ropensci/plotly/issues/799)). In fact, a lot of times, I prototype plots with `ggplotly()`, then translate it `plot_ly()` when it's time to put it into production.
+
+#### Customizing tooltips
+
+At this point, we've learned how to turn a tooltip on/off (via `hoverinfo`), but perhaps more useful is the ability to completely control what appears in the tooltip. By using `ggplotly()`'s ability to translate a special `text` aesthetic with `tooltip='text'`, we can effectively supply any text we want and even style it with HTML tags -- as is done in this [choropleth map](https://en.wikipedia.org/wiki/Choropleth_map) encoding population in 2014. 
+
+```r
+p <- ggplot(us_lcc) + 
+  geom_sf(aes(fill = pop_2014, text = paste("The state of <b>", name, "</b> had \n", pop_2010, "people in 2010")))
+p %>%
+  ggplotly(tooltip = "text") %>%
+  style(hoverlabel = list(bgcolor = "white"), hoveron = "fill")
+```
+
+<a href="/01-map-tooltip.html" target="_blank">
+  <img src="https://i.imgur.com/2T6X3Ec.gif" width="100%"/>
+</a>
+
+### Animation
+
+A choropleth map of the population in 2014 is not that interesting, so let's grab some other data. Here I download [physical activity and obesity 'prevalence'](http://ghdx.healthdata.org/record/united-states-physical-activity-and-obesity-prevalence-county-2001-2011) between 2001-2011 in every US county from the [Global Health Data Exchange](http://ghdx.healthdata.org/). then finding the mean rate for every combination of state and year:
+
+```r
+url <- "http://ghdx.healthdata.org/sites/default/files/record-attached-files/IHME_USA_OBESITY_PHYSICAL_ACTIVITY_2001_2011.csv"
+
+library(tidyr)
+# reshape and create a column tracking the year
+dat_clean <- readr::read_csv(url) %>%
+  gather(year, value, matches("prevalence [0-9]+ \\(%\\)")) %>%
+  mutate(year = stringr::str_extract(year, "[0-9]+")) 
+
+# compute mean outcome for every combination of state/year/outcome
+dat_state <- dat_clean %>%
+  rename(name = State, outcome = Outcome) %>%
+  group_by(name, year, outcome) %>%
+  summarise(value = mean(value, na.rm = TRUE))
+
+# attach our (simplified) state features to our summaries 
+dat_sf <- dat_state %>%
+  left_join(us_lcc) %>%
+  st_as_sf() %>%
+  mutate(txt = paste(name, year, "\n", outcome, scales::percent(value / 100)))
+  
+select(dat_sf, name, year, outcome, value, geometry)
+```
+
+```r
+Simple feature collection with 1683 features and 4 fields
+geometry type:  GEOMETRY
+dimension:      XY
+bbox:           xmin: -2553435 ymin: -1777696 xmax: 2258071 ymax: 1407299
+epsg (SRID):    NA
+proj4string:    +proj=lcc +lat_1=33 +lat_2=45 +lat_0=39 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs
+# A tibble: 1,683 x 5
+# Groups:   name, year [561]
+   name    year  outcome       value                       geometry
+   <chr>   <chr> <chr>         <dbl>              <sf_geometry [m]>
+ 1 Alabama 2001  Any PA         66.0 MULTIPOLYGON (((761196.5 -9...
+ 2 Alabama 2001  Obesity        34.5 MULTIPOLYGON (((761196.5 -9...
+ 3 Alabama 2001  Sufficient PA  42.7 MULTIPOLYGON (((761196.5 -9...
+ 4 Alabama 2002  Any PA         66.8 MULTIPOLYGON (((761196.5 -9...
+ 5 Alabama 2002  Obesity        35.4 MULTIPOLYGON (((761196.5 -9...
+ 6 Alabama 2002  Sufficient PA NaN   MULTIPOLYGON (((761196.5 -9...
+ 7 Alabama 2003  Any PA         67.5 MULTIPOLYGON (((761196.5 -9...
+ 8 Alabama 2003  Obesity        36.2 MULTIPOLYGON (((761196.5 -9...
+ 9 Alabama 2003  Sufficient PA  44.6 MULTIPOLYGON (((761196.5 -9...
+10 Alabama 2004  Any PA         67.7 MULTIPOLYGON (((761196.5 -9...
+# ... with 1,673 more rows
+```
+
+There's a number of ways we could try to visualize how physical activity and/or obesity has evolved over the years. One way would be to create a small multiple display (one for every year via `facet_wrap(~ year)`), but it's a bit less visual work to perceive differences via animation. Creating animations with `ggplotly()` is very similar to [gganimate](https://github.com/dgrtwo/gganimate) -- we just add an aesthetic mapping of `frame = year`.
+
+```r
+obesity <- filter(dat_sf, outcome == "Obesity")
+p <- ggplot(obesity) + 
+    geom_sf(aes(fill = value, frame = year, text = txt)) + 
+    ggtitle("Obesity rates in the US over time") +
+    ggthemes::theme_map()
+plotly_json(p)
+```
+
+<a href="/04-frame-json.html" target="_blank">
+  <img src="https://i.imgur.com/12GzPtx.png"/>
+</a>
+
+Having a look at the [underlying JSON](/04-frame-json.html) reveals a special *frame* component which adheres to the underlying [plotly.js animation api](https://plot.ly/javascript/#animations). It turns out that the data supplied to each frame of the animation has a bunch of redundant information. Specifically, the x/y coordinates for the state boundaries are repeated on every frame -- which we don't really need to do in this case, so let's remove that data before printing:
+
+```r
+# ggplotly() won't (for good reason) "register" an animation
+# until print time, so to acess/modify the frames component, 
+# you'll need plotly_build() -- use this function when you 
+# want to be *absolutely* sure you're accessing the full list/JSON
+gg <- p %>%
+  ggplotly(tooltip = "text") %>%
+  style(hoveron = "fill") %>%
+  plotly_build()
+
+# remove x/y data from every trace
+gg$x$frames <- lapply(
+  gg$x$frames, function(f) { 
+    f$data <- lapply(f$data, function(d) d[!names(d) %in% c("x", "y")])
+    f 
+  })
+gg
+```
+
+<a href="/04-animation.html" target="_blank">
+  <img src="https://i.imgur.com/xg86bkG.gif" width="100%"/>
+</a>
+
+### Highlighting
+
+In addition to animation, plotly has powerful framework for filtering, highlighting, and [linking views without shiny](https://plotly-book.cpsievert.me/linking-views-without-shiny.html). This framework leverages the `SharedData` class from [**crosstalk**](https://rstudio.github.io/crosstalk/) package where one essentially defines a "unit of interaction" using a column from the data to be visualized. In our case, we can set `name` (i.e, state) as the interaction unit, then when we trigger a selection (e.g., brush a time series of physical actively), the relevant graphical marks are highlighted in every view:
+
+<a href="/05-obesity-linked.html" target="_blank">
+  <img src="https://i.imgur.com/LhxTonw.gif" width="100%"/>
+</a>
+
+
+```r
+library(crosstalk)
+dat_shared <- dat_sf %>%
+  filter(!is.na(value)) %>%
+  SharedData$new(~name, "A")
+
+p <- ggplot(dat_shared) + 
+  geom_line(aes(x = year, y = value, group = name)) + 
+  facet_wrap(~outcome, scales = "free") +
+  theme_bw()
+
+lines <- p %>%
+  ggplotly(tooltip = "name") %>%
+  style(mode = "markers+lines") %>%
+  layout(dragmode = "select") %>%
+  highlight("plotly_selected")
+
+# compute mean obesity for each state, define "state" as interaction unit (in group "A")
+ob_mean <- obesity %>%
+  group_by(name) %>%
+  summarise(mean_obesity = mean(value)) %>%
+  mutate(txt = paste(name, "mean \n obesity", scales::percent(mean_obesity / 100))) %>%
+  SharedData$new(~name, "A")
+
+map <- ggplot(ob_mean) + 
+  geom_sf(aes(fill = mean_obesity, text = txt)) + 
+  ggthemes::theme_map()
+
+library(htmltools)
+browsable(tagList(ggplotly(map, tooltip = "text"), lines))
+```
+
+For a gentle overview of the linking framework, checkout [my webinar](https://vimeo.com/214301880) from when it was initially released. For more advanced overview, checkout the ['day2' slides](https://workshops.cpsievert.me/20171118/slides/day2/#1) my previous [plotcon workshop](https://plotcon.plot.ly/. I've also found these skills are best transferred in person at one of [my workshops](https://blog.cpsievert.me/2017/12/04/components-of-a-successful-r-workshop/) ;)
+
+## Discussion
+
+Compared to other interactive mapping approaches, using `geom_sf()` + `ggplotly()` has it's pros and its cons. It terms of it's ability to link multiple views, it seems to be the most advanced, but there are a number of other features you might want (e.g., dynamic zooming of different baselayers). I think a good number of these can be resolved by using **sf** with [`plot_scattermapbox()`](https://plot.ly/r/scattermapbox/) and better support for that should be coming soon, but it would also be nice to see **leaflet** [officially](https://github.com/rstudio/leaflet/pull/346) [support](https://github.com/rstudio/leaflet/pull/391) more of the highlighting features that **plotly** does.
+
+As it turns out, **plotly**'s 'highlighting' framework can actually be used to do much more than just highlighting. It works by adding additional traces that reflect the selected data and the attributes of these trace(s) can be customized. When used in clever ways, that capability can be used to, for example, [outline simple features](https://gist.github.com/cpsievert/eca3ff3eba67ab6b4719c748dafd5c4a) on hover, or even [click on a simple feature to label](https://gist.github.com/cpsievert/fa56bd89122e395803f30602b774dbe1) it: 
+<a href="https://gist.github.com/cpsievert/fa56bd89122e395803f30602b774dbe1">
+ <img src="https://cloud.githubusercontent.com/assets/1365941/25501881/f816c3d8-2b59-11e7-98e1-fcd94877d584.gif" width="100%" />
+</a>
+
+## Conclusion
+
+I hope this post convinces folks that even when a `ggplotly()` conversion doesn't quite work the way you want it to, we can still leverage the underlying [plotly.js library](https://plot.ly/javascript/) to do powerful things quickly. My goal for the R package **plotly** has always been to make interactive web graphics [practically useful for exploratory data analysis](https://talks.cpsievert.me/20180202/) in R. If you'd like to help support a particular facet of this mission, [please get in touch](mailto:cpsievert1@gmail.com) (it's much easier to for plotly to monetize plotly.js and dash, which is why R development has dwindled).
