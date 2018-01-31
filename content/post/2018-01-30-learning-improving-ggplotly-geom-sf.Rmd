@@ -304,7 +304,7 @@ library(htmltools)
 browsable(tagList(ggplotly(map, tooltip = "text"), lines))
 ```
 
-For a gentle overview of the linking framework, checkout [my webinar](https://vimeo.com/214301880) from when it was initially released. For more advanced overview, checkout the ['day2' slides](https://workshops.cpsievert.me/20171118/slides/day2/#1) my previous [plotcon workshop](https://plotcon.plot.ly/. I've also found these skills are best transferred in person at one of [my workshops](https://blog.cpsievert.me/2017/12/04/components-of-a-successful-r-workshop/) ;)
+For a gentle overview of the linking framework, checkout [my webinar](https://vimeo.com/214301880) from when it was initially released. For more advanced overview, checkout the ['day2' slides](https://workshops.cpsievert.me/20171118/slides/day2/#1) from my previous [plotcon workshop](https://plotcon.plot.ly/. I've also found these skills are best transferred in person at one of [my workshops](https://blog.cpsievert.me/2017/12/04/components-of-a-successful-r-workshop/) ;)
 
 ## Discussion
 
@@ -317,4 +317,4 @@ As it turns out, **plotly**'s 'highlighting' framework can actually be used to d
 
 ## Conclusion
 
-I hope this post convinces folks that even when a `ggplotly()` conversion doesn't quite work the way you want it to, we can still leverage the underlying [plotly.js library](https://plot.ly/javascript/) to do powerful things quickly. My goal for the R package **plotly** has always been to make interactive web graphics [practically useful for exploratory data analysis](https://talks.cpsievert.me/20180202/) in R. If you'd like to help support a particular facet of this mission, [please get in touch](mailto:cpsievert1@gmail.com) (it's much easier to for plotly to monetize plotly.js and dash, which is why R development has dwindled).
+I hope this post convinces folks that even when a `ggplotly()` conversion doesn't quite work the way you want it to, we can still leverage the underlying [plotly.js library](https://plot.ly/javascript/) to do powerful things quickly. My goal for the R package **plotly** has always been to make interactive web graphics [practically useful for exploratory data analysis](https://talks.cpsievert.me/20180202/) in R. If you're interested in supporting a particular facet of this mission, [please get in touch](mailto:cpsievert1@gmail.com) (it's much easier for plotly to monetize plotly.js and [dash](https://plot.ly/dash), which is why R plotly development has dwindled recently).
