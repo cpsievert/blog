@@ -4,9 +4,8 @@
 save_widget <- function(w, ...) {
   withr::with_dir(
     "static",
-    htmlwidgets::saveWidget(
+    htmltools::save_html(
       w, ...,
-      selfcontained = FALSE, 
       libdir = "html-dependencies"
     )
   )
