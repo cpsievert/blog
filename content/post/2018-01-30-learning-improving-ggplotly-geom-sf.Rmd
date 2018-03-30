@@ -11,7 +11,7 @@ tags: []
 
 <p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;" >
   <b>
-    Want to master plotly for R and shiny? [Attend my two-day workshop](https://plotcon.plot.ly/workshops/r-shiny-dash-r)!
+   Need help with R, data visualization, and/or statistics? [Hire me](https://consulting.cpsievert.me) or [attend my 2 day workshop](https://plotcon.plot.ly/workshops/r-shiny-dash-r)!
   </b>
 </p>
 
@@ -30,6 +30,7 @@ For a quick demonstration of `geom_sf()`, I'm using [**albersusa**](https://gith
 # devtools::install_github('ropensci/plotly')
 # devtools::install_github('hrbrmstr/albersusa')
 library(plotly)
+library(sf)
 library(albersusa)
 
 us_laea <- usa_sf("laea")

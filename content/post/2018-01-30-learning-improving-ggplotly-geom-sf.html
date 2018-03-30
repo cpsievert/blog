@@ -12,7 +12,7 @@ tags: []
 
 
 <p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;">
-<b> Want to master plotly for R and shiny? <a href="https://plotcon.plot.ly/workshops/r-shiny-dash-r">Attend my two-day workshop</a>! </b>
+<b> Need help with R, data visualization, and/or statistics? <a href="https://consulting.cpsievert.me">Hire me</a> or <a href="https://plotcon.plot.ly/workshops/r-shiny-dash-r">attend my 2 day workshop</a>! </b>
 </p>
 <p>As the maintainer of the R package <a href="https://github.com/ropensci/plotly"><strong>plotly</strong></a>, I’m certainly aware that <code>ggplotly()</code> is not perfect.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> And, even when conversion from <strong>ggplot2</strong> to <strong>plotly</strong> ‘works’ it can leave some things to be desired. For example, it might take a while to render, it might not look exactly the way <strong>ggplot2</strong> does, and/or the default interactive properties (e.g., tooltips) might not work the way you want them to. In almost every case, these are issues that, with a bit of knowledge about <strong>plotly</strong> and the underlying <a href="https://github.com/plotly/plotly.js">plotly.js</a> library, you can fix. That’s because, as long as <code>ggplotly()</code> returns an object, we can inspect its underlying data structure (which, by the way, is useful for learning plotly.js!) and improve on it by modifying that data.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> This post explores several ways to learn from, leverage, and improve <code>ggplotly()</code> conversions of <strong>ggplot2</strong>’s <code>geom_sf()</code> (which is still in development), but some of the same lessons can apply more generally to other <strong>ggplot2</strong> geoms.</p>
 <div id="basic-intro-to-geom_sf" class="section level3">
@@ -22,6 +22,7 @@ tags: []
 # devtools::install_github(&#39;ropensci/plotly&#39;)
 # devtools::install_github(&#39;hrbrmstr/albersusa&#39;)
 library(plotly)
+library(sf)
 library(albersusa)
 
 us_laea &lt;- usa_sf(&quot;laea&quot;)
