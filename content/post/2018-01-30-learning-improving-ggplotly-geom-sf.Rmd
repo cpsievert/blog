@@ -305,7 +305,7 @@ library(htmltools)
 browsable(tagList(ggplotly(map, tooltip = "text"), lines))
 ```
 
-For a gentle overview of the linking framework, checkout [my webinar](https://vimeo.com/214301880) from when it was initially released. For more advanced overview, checkout the ['day2' slides](https://workshops.cpsievert.me/20171118/slides/day2/#1) from my previous [plotcon workshop](https://plotcon.plot.ly/. I've also found these skills are best transferred in person at one of [my workshops](https://blog.cpsievert.me/2017/12/04/components-of-a-successful-r-workshop/) ;)
+For a gentle overview of the linking framework, checkout [my webinar](https://vimeo.com/214301880) from when it was initially released. If you're interested in understanding the full power of the linking framework, my [2 day plotly for R workshop](https://plotcon.plot.ly/r-shiny-dash-r/) is the best way to learn it effectively. I also offer this workshop as an on-site training course, so [please get in touch](https://carsonsievert.typeform.com/to/FKUSbW) if you have any interest!
 
 ## Discussion
 
