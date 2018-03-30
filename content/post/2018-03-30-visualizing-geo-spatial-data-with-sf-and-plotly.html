@@ -1,0 +1,212 @@
+---
+title: Visualizing geo-spatial data with sf and plotly
+author: Carson Sievert
+date: '2018-03-30'
+slug: visualizing-geo-spatial-data-with-sf-and-plotly
+categories:
+  - plotly
+  - R
+  - sf
+  - interactive graphics
+tags: []
+---
+
+
+
+<p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;">
+<b>
+Need help with R, data viz, and/or stats? <a href="https://consulting.cpsievert.me">Work with me</a> or <a href="https://plotcon.plot.ly/workshops/r-shiny-dash-r">attend my 2 day workshop</a>!
+</b>
+</p>
+<p>In my <a href="https://blog.cpsievert.me/2018/01/30/learning-improving-ggplotly-geom-sf/">last post</a>, we explored interactive visualizations of <a href="https://r-spatial.github.io/sf/">simple features</a> (i.e., interactive maps) via <strong>ggplot2</strong>’s <code>geom_sf()</code> and <strong>plotly</strong>’s <code>ggplotly()</code>. This time we’ll make similar visualizations using <strong>plotly</strong>’s “non-ggplot2” mapping interfaces (namely <code>plot_ly()</code>, <code>plot_geo()</code>, and <code>plot_mapbox()</code>). Here’s a quick example of reading a shape file into R as simple features via <a href="https://r-spatial.github.io/sf/reference/st_read.html"><code>st_read()</code></a>, then plotting those features (in this case, North Carolina counties) using each one of the four mapping approaches <strong>plotly</strong> provides. Notice how all of these options auto-magically know how to render simple features:</p>
+<pre class="r"><code># to replicate these examples, you currently need the dev version
+# devtools::install_github(&#39;ropensci/plotly&#39;)
+library(plotly)
+
+nc &lt;- sf::st_read(system.file(&quot;shape/nc.shp&quot;, package = &quot;sf&quot;), quiet = TRUE)
+class(nc)</code></pre>
+<pre class="r"><code>#&gt; [1] &quot;sf&quot;         &quot;data.frame&quot;</code></pre>
+<pre class="r"><code>subplot(nrows = 2,
+  ggplot(nc) + geom_sf(),
+  plot_ly(nc),
+  plot_geo(nc),
+  plot_mapbox(nc)
+) %&gt;% hide_legend()</code></pre>
+<p><a href="/06-sf-options.html" target="_blank">
+<img src="https://i.imgur.com/nZujcuv.png" width="100%"/>
+</a></p>
+<p>You might be wondering, “What can <strong>plotly</strong> offer over other interactive mapping packages such as <a href="https://cran.r-project.org/package=leaflet"><strong>leaflet</strong></a>, <a href="https://cran.r-project.org/package=mapview"><strong>mapview</strong></a>, <a href="https://cran.r-project.org/package=mapedit"><strong>mapedit</strong></a>, etc?”. One big feature is the <a href="https://plotly-book.cpsievert.me/linking-views-without-shiny.html">linked brushing framework</a>, which works best when linking <strong>plotly</strong> together with other <strong>plotly</strong> graphs (i.e., only a subset of brushing features are supported when linking to other <a href="https://rstudio.github.io/crosstalk/widgets.html">crosstalk-compatible htmlwidgets</a>). Another is the ability to leverage the <a href="https://plot.ly/javascript/plotlyjs-function-reference/">plotly.js API</a> to make efficient updates in shiny apps <a href="https://blog.cpsievert.me/2017/07/13/plotly-4.7.1-now-on-cran/">via <code>plotlyProxy()</code></a>. Speaking of efficiency, <a href="https://plot.ly/javascript/">plotly.js</a> keeps on improving the performance of their WebGL-based rendering, so I recommend trying <code>plot_ly()</code> (with <code>toWebGL()</code>) and/or <code>plot_mapbox()</code> if you have lots of graphical elements to render. Also, by having a consistent interface between these various mapping approaches, it’s much quicker and easier to switch from one approach to another when you need to leverage a different set of <a href="#strengths-weaknesses">strengths and weaknesses</a>.</p>
+<p>Speaking of strengths, plotly.js also has 🌍-class 3D rendering support. When used in combination with <strong>plotly</strong>’s linking framework, we can do some nifty things – all inside self-contained HTML! For example, <a href="/sf-plotly-3D-globe.html">here are linked 3D &amp; 2D views</a> of tropical storm paths which is useful for querying anomalies and provides some insight into the relationship between distance traveled, altitude, latitude, and longitude:<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
+<!--
+[^1]: The long answer is that the scope for interactive graphics libraries, especially a general purpose one, is impossibly large. And, to be completely honest, it bothers me when folks think there is *ever* going to be a single library/solution for interactive graphics. People are quite creative when dreaming up (i.e., requesting) interactive features, which can be good, but also bad, when one insists on a essentially redundant feature(s).
+-->
+<pre class="r"><code># To see the actual R code that generates the self-contained HTML result,
+# enter this in your R console or visit https://github.com/ropensci/plotly/tree/master/demo
+demo(&quot;sf-plotly-3D-globe&quot;, package = &quot;plotly&quot;)</code></pre>
+<iframe src="https://player.vimeo.com/video/257149623" width="640" height="345" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen>
+</iframe>
+<p>As you’ll see in the <a href="https://github.com/ropensci/plotly/blob/master/NEWS.md">NEWS</a> of the development version, I’ve also added new <code>stroke</code> and <code>span</code> arguments which make it easier to control the outline color and width of filled polygons/markers/bars/etc. These new arguments work in a similar way to existing arguments like <code>color</code> and <code>linetype</code>. In particular, constant values can be specified via <code>I()</code>:</p>
+<pre class="r"><code>plot_ly(nc, stroke = I(&quot;#119dff&quot;), span = I(5), color = I(&quot;#00cc96&quot;), linetype = I(&quot;dash&quot;))</code></pre>
+<p><img src="https://i.imgur.com/AEv3EiO.png" width="100%"/></p>
+<p>Furthermore, values not wrapped in <code>I()</code> are mapped to a visual range defined by the plural form of the argument (i.e., <code>strokes</code> and <code>spans</code>). However, to effectively map data to these sorts of visuals, we might want to generate mutliple traces.</p>
+<div id="one-trace-to-rule-them-all" class="section level2">
+<h2>One trace to rule them all?</h2>
+<p>One of the trickiest things about <a href="http://consulting.cpsievert.me/#Training">mastering <strong>plotly</strong></a> and/or plotly.js is knowing what can and can not be done with just one trace. As I <a href="https://plotly-book.cpsievert.me/scatter-traces.html#line-plots">elude to in the <em>plotly for R</em> book</a>, if something can be implemented with a single trace, then it should, because traces don’t scale very well (i.e., can easily lead to a sluggish plot). That’s why, by default, the maps above are implemented with just one trace.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> However, when you need certain scalar (i.e., non-data-array) trace properties (e.g. <code>fillcolor</code>) to vary, you might want to use <code>split</code> to create a trace for every level in the <code>split</code> variable. For example, in this map of <a href="https://en.wikipedia.org/wiki/First-level_NUTS_of_the_European_Union">territories</a> in <a href="https://en.wikipedia.org/wiki/Franconia">Franconia</a>, we ensure one trace per territory (via the <code>split</code> argument), which leads to two fairly obvious features:</p>
+<ol style="list-style-type: decimal">
+<li>The ability to hide/show territories by clicking (or double-clicking) legend entries. As we’ll discuss later, there are actually ways to do this sort of thing with <em>just one trace</em> via the <a href="#crosstalk">crosstalk (i.e. linked views) framework</a>.</li>
+<li>A different color for each territory. In this case, we’ve used <code>split</code> without specifying <code>color</code>, so plotly.js will impose it’s default coloring rules, but you could easily set a constant color across traces (e.g., <code>color = I(&quot;black&quot;)</code>) or, as we’ll see shortly, use a custom color scheme.</li>
+</ol>
+<pre class="r"><code># load trails data (an sf object bundled with the mapview package)
+# install.packages(&#39;mapview&#39;)
+data(franconia, package = &quot;mapview&quot;)
+
+# Compare this result with: `plot_ly(franconia, split = ~NAME_ASCI, color = I(&quot;black&quot;))`
+plot_ly(franconia, split = ~NAME_ASCI)</code></pre>
+<p><a href="/franconia-split.html" target="_blank">
+<img src="https://i.imgur.com/83FJOBA.gif" width="100%"/>
+</a></p>
+<p>Having a different trace for each territory opens the door for further territory-level customization, such as having a custom color, linetype, fill-specific tooltip, etc. When <code>color</code> is <em>numeric</em>, and you want it to set a different fill-color for certain polygon(s), you’ll need <code>split</code> to ensure there is no more than one color per trace:</p>
+<pre class="r"><code>plot_ly(
+  franconia, 
+  split = ~NUTS_ID,
+  color = ~SHAPE_AREA,
+  alpha = 1,
+  showlegend = FALSE
+)</code></pre>
+<p><a href="/franconia-choro.html" target="_blank">
+<img src="https://i.imgur.com/6oFCHiV.png" width="100%"/>
+</a></p>
+<p>On the other hand, if <code>color</code> is a discrete variable, <code>plot_ly()</code> always produces one trace per level. Since, in this case, there are over 30 districts, I’m going to use <a href="https://stackoverflow.com/questions/21352683/randomising-qualitative-colours-for-large-sets-in-ggplot">a color palette</a> that does a fairly good job in distinguishing between a large number of groups:</p>
+<pre class="r"><code>cols &lt;- c(&quot;#89C5DA&quot;, &quot;#DA5724&quot;, &quot;#74D944&quot;, &quot;#CE50CA&quot;, &quot;#3F4921&quot;, &quot;#C0717C&quot;, &quot;#CBD588&quot;, &quot;#5F7FC7&quot;, &quot;#673770&quot;, &quot;#D3D93E&quot;, &quot;#38333E&quot;, &quot;#508578&quot;, &quot;#D7C1B1&quot;, &quot;#689030&quot;, &quot;#AD6F3B&quot;, &quot;#CD9BCD&quot;, &quot;#D14285&quot;, &quot;#6DDE88&quot;, &quot;#652926&quot;, &quot;#7FDCC0&quot;, &quot;#C84248&quot;, &quot;#8569D5&quot;, &quot;#5E738F&quot;, &quot;#D1A33D&quot;, &quot;#8A7C64&quot;, &quot;#599861&quot;)
+plot_ly(franconia, color = ~NAME_ASCI, colors = cols, alpha = 1)</code></pre>
+<p><a href="/franconia-color-discrete.html" target="_blank">
+<img src="https://i.imgur.com/LXrGpXx.png" width="100%"/>
+</a></p>
+<p>Note that you can still <code>color</code> multiple traces the same color, but if you want to have a different tooltip to appear upon hovering a specific set of polygons (as opposed to along each point), you’ll want to still use <code>split</code> in combination with <code>hoveron = &quot;fill&quot;</code>:</p>
+<pre class="r"><code>plot_ly(
+  franconia,
+  split = ~NUTS_ID,
+  color = ~district,
+  stroke = I(&quot;black&quot;),
+  text = ~paste(NAME_ASCI, &quot;\n is in&quot;, district), 
+  hoverinfo = &quot;text&quot;,
+  hoveron = &quot;fill&quot;
+)</code></pre>
+<p><a href="/franconia-color-split.html" target="_blank">
+<img src="https://i.imgur.com/XqkqQiS.png" width="100%"/>
+</a></p>
+<div id="leveraging-mapbox-basemaps" class="section level3">
+<h3>Leveraging mapbox basemaps</h3>
+<p>Among the four mapping options, the one that excites me the most is <code>plot_mapbox()</code><a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>. The primary reason to use <code>plot_mapbox()</code> (or <code>plot_geo()</code>) over <code>geom_sf()</code> (or <code>plot_ly()</code>) is that these approaches include a base-map layer which updates dynamically on zoom and can quite helpful for providing geographic context. The base-map styling can be easily customized – especially for <code>plot_mapbox()</code> via the <a href="https://plot.ly/r/reference/#layout-mapbox-style"><code>layout.mapbox.style</code> attribute</a>. In addition to a URL to a <a href="https://www.mapbox.com/help/create-a-custom-style/">custom style</a>, you can provide this attribute with a pre-packaged style name. To get a list of those pre-packaged styles, reach into the plotly.js plot <a href="https://www.rdocumentation.org/packages/plotly/versions/4.7.1/topics/schema"><code>schema()</code></a>:</p>
+<pre class="r"><code>styles &lt;- schema()$layout$layoutAttributes$mapbox$style$values
+styles</code></pre>
+<pre class="r"><code>[1] &quot;basic&quot;             &quot;streets&quot;           &quot;outdoors&quot;          &quot;light&quot;            
+[5] &quot;dark&quot;              &quot;satellite&quot;         &quot;satellite-streets&quot;</code></pre>
+<p>A nice feature to include with these maps is a dropdown to dynamically change the base-map styling. To do so, use the <a href="https://plot.ly/r/reference/#layout-updatemenus"><code>layout.updatemenus.buttons</code> attribute</a> to control the value of the <code>layout.mapbox.style</code> attribute. Since we wish to modify the <code>layout.mapbox.style</code> attribute, which is part of the plot’s layout, we’ll want each dropdown “button” to trigger a <a href="https://plot.ly/javascript/plotlyjs-function-reference/">relayout</a> event with the appropriate <code>args</code>. Here is one way to create a list of buttons, one for each of the default styles:</p>
+<pre class="r"><code># generate plot.js buttons, one for every style 
+style_buttons &lt;- lapply(styles, function(s) {
+  list(label = s, method = &quot;relayout&quot;, args = list(&quot;mapbox.style&quot;, s))
+})</code></pre>
+<p>With our list of <code>style_buttons</code>, we’re now ready to visualize something. Here I’ll leverage the <code>trails</code> data from the <a href="https://r-spatial.github.io/mapview/"><strong>mapview</strong></a> package, which has a number of hiking trails of Franconia, France.</p>
+<pre class="r"><code>data(trails, package = &#39;mapview&#39;)
+
+plot_mapbox(trails, color = I(&quot;black&quot;)) %&gt;%
+  layout(
+    title = &quot;Selected hiking trails in Franconia&quot;,
+    mapbox = list(style = &quot;satellite-streets&quot;),
+    updatemenus = list(list(y = 0.8, buttons = rev(style_buttons)))
+  )</code></pre>
+<p><a href="/07-satellite.html" target="_blank">
+<img src="https://i.imgur.com/YgqpCup.png" width="100%"/>
+</a></p>
+<p>As a side note, you could also <a href="https://blog.cpsievert.me/2017/07/13/plotly-4.7.1-now-on-cran/">use <strong>shiny</strong> to modify the basemap layer</a> without redrawing the entire plot, but the result here is self-contained HTML/SVG, which is <strong>much easier</strong> to share, host, scale, and maintain.</p>
+</div>
+<div id="crosstalk" class="section level3">
+<h3>Linking views without shiny</h3>
+<p>In terms of linked brushing <em>in self-contained HTML</em>, <strong>plotly</strong> is definitely the most advanced <a href="https://rstudio.github.io/crosstalk/widgets.html"><strong>crosstalk</strong>-compatible htmlwidget</a>. You’ll be able to do more when linking <strong>plotly</strong> to <strong>plotly</strong>, but since <a href="https://github.com/rstudio/DT/pull/498">persistent selection was recently added to <strong>DT</strong></a>, let’s demonstrate linking <strong>plotly</strong> with <strong>DT</strong>. To link views via <strong>crosstalk</strong>, you’ll want to supply a data frame of interest to the <code>SharedData$new()</code> method and route the resulting object to any plots that you want to link. By default, the row index (which, in this case, is a simple feature) is used to define the graphical queries, but you can also reference a (discrete) variable to achieve <a href="http://vis.berkeley.edu/papers/generalized_selection/">generalized selections</a> (e.g., you could query all trails in a district via <code>SharedData$new(trails, ~district)</code>).<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> Linking <strong>plotly</strong> with <strong>DT</strong> in this way gives us a pretty powerful way to identify simple features both <a href="https://plotly-book.cpsievert.me/linking-views-without-shiny.html#selection-via-indirect-manipulation">directly and indirectly</a>.</p>
+<pre class="r"><code>library(crosstalk)
+tsd &lt;- SharedData$new(trails)
+
+bscols(
+  plot_mapbox(tsd, text = ~FKN, hoverinfo = &quot;text&quot;),
+  DT::datatable(tsd)
+)</code></pre>
+<p><a href="/08-trails-dt.html" target="_blank">
+<img src="https://i.imgur.com/fsxwr5l.gif" width="100%"/>
+</a></p>
+<p>To provide a sneak peak into the power of the linking framework in <strong>plotly</strong>, let’s leverage a fairly recent feature: brushing of aggregated traces. This example demonstrates how to brush a histogram, but a similar approach could be used to brush other aggregated traces (e.g., <code>add_histogram2d()</code>, <code>add_boxplot()</code>, etc). In fact, one could replicate this example with <code>add_bars()</code> (instead of <code>add_histogram()</code>) by pre-computing bars heights and <a href="https://plotly-book.cpsievert.me/linking-views-without-shiny.html#fig:density2scatter">using a list-column key</a> to assign multiple counties to each bar. In either case (<code>add_bars()</code> or <code>add_histogram()</code>), it is usually a good idea to set <code>layout.barmode = &quot;overlay&quot;</code> so that newly added bars don’t use the plotly.js default of dodging the existing bars. In the case where we let plotly.js dynamically compute aggregates (i.e., <code>add_histogram()</code>) it’s also a good idea to also define <code>xbins</code> (or <code>ybins</code>) so that binning of new bars use the same rules as the existing (i.e. initial) bars.</p>
+<pre class="r"><code>ncsd &lt;- SharedData$new(nc)
+
+bscols(
+  plot_mapbox(ncsd) %&gt;%
+    highlight(dynamic = TRUE, persistent = TRUE),
+  plot_ly(ncsd, x = ~AREA) %&gt;% 
+    add_histogram(xbins = list(start = 0, end = 0.3, size = 0.02)) %&gt;%
+    layout(barmode = &quot;overlay&quot;) %&gt;% 
+    highlight(&quot;plotly_selected&quot;, persistent = TRUE)
+)</code></pre>
+<p><a href="/crosstalk-aggregates.html" target="_blank">
+<img src="https://i.imgur.com/3YKx7Ow.gif" width="100%"/>
+</a></p>
+<p>If you’re interested in understanding the full power of the linking framework, my <a href="https://plotcon.plot.ly/r-shiny-dash-r/">2 day plotly for R workshop</a> is the best way to learn it effectively. I also offer this workshop as an on-site training course, so <a href="https://carsonsievert.typeform.com/to/FKUSbW">please get in touch</a> if you have any interest!</p>
+</div>
+</div>
+<div id="more-learning-resources" class="section level2">
+<h2>More learning resources</h2>
+<p>At least currently, the best examples of using <strong>sf</strong> with <strong>plotly</strong> are within the package demos. Any demo names that are prefixed with ‘sf’ when you look at the list provided by <code>demo(package = &quot;plotly&quot;)</code> are relevant. For example, <code>demo(&quot;sf-dt&quot;, package = &quot;plotly&quot;)</code> gives an example of querying simple feature data by linking <code>plot_mapbox()</code> with <strong>DT</strong> via <strong>crosstalk</strong>. Also be on the look-out for updates to the <a href="https://plotly-book.cpsievert.me/maps.html">mapping section</a> of the <a href="https://plotly-book.cpsievert.me">plotly for R</a> book as well as examples in some of my more recent <a href="https://talks.cpsievert.me/">talks</a>.</p>
+</div>
+<div id="future-work" class="section level2">
+<h2>Future work</h2>
+<p>I’m excited to see the author of <strong>sf</strong>, Edzer Pebesma, starting work on <a href="https://github.com/r-spatial/stars"><strong>stars</strong></a> – a tidy (and <strong>sf</strong> friendly) approach to working with geo-spatial arrays (e.g. raster data). Once that project becomes stable, I’m hoping to find the time and resources to <a href="https://github.com/ropensci/plotly/issues/1200">build a similar bridge</a> between <strong>plotly</strong> and <strong>stars</strong>. This effort might have to take a back seat for several months though unless someone would like to <a href="https://plot.ly/products/consulting-and-oem/">sponsor</a> (or otherwise assist in) development.</p>
+</div>
+<div id="strengths-weaknesses" class="section level2">
+<h2>Appendix: strengths and weaknesses</h2>
+<p>Below is a list of strengths (blue) and weaknesses (red) for each mapping approach in <strong>plotly</strong>. Note that plotly.js is still under development, so this list is likely change a bit (please <a href="mailto:cpsievert1@gmail.com">let me know</a> if I’m missing anything):</p>
+<div id="plot_ly-and-geom_sf" class="section level3">
+<h3>1. <code>plot_ly()</code> and <code>geom_sf()</code></h3>
+<ul>
+<li>Render in SVG or WebGL (<code>toWebGL()</code> makes SVG -&gt; WebGL easy) 🔵
+<ul>
+<li><code>fill='toself'</code> is <a href="https://github.com/plotly/plotly.js/issues/2291">still buggy</a> in WebGL 🔴</li>
+</ul></li>
+<li>Make 3D visuals by adding a <code>z</code> attribute 🔵
+<ul>
+<li>With a bit of math, you can project any lat/lon data onto a sphere (i.e. globe) and color the globe’s surface according to some measure, <a href="https://github.com/cpsievert/Weather_Stuff/blob/ba80004/radiation-plot-3D.R#L33-L41">like radiation</a> 🔵</li>
+<li>Unlike 2D lines, 3D lines support a color gradient 🔵</li>
+<li>Using <code>subplot()</code> with 3D <a href="https://github.com/ropensci/plotly/issues/711">doesn’t currently rescale domains correctly</a> 🔴</li>
+</ul></li>
+<li>Works with any coordinate system 🔵
+<ul>
+<li>Currently no way to update a graticule on zoom 🔴</li>
+</ul></li>
+</ul>
+</div>
+<div id="plot_mapbox" class="section level3">
+<h3>2. <code>plot_mapbox()</code></h3>
+<ul>
+<li>Full customization of base-maps that provide geo-graphic context 🔵</li>
+<li>Simple features can be rendered as <a href="https://github.com/ropensci/plotly/blob/master/demo/sf-mapbox-data.R">data</a> or <a href="https://github.com/ropensci/plotly/blob/master/demo/sf-mapbox-layout.R">layout</a> components 🔵</li>
+<li><a href="https://github.com/plotly/plotly.js/issues/815">Numerous trace rendering limitations</a> including no <code>marker.line</code> <code>hoveron='fill'</code> (i.e., <code>stroke</code> and <code>span</code> won’t do anything) 🔴</li>
+<li>WebGL infrastructure allows one to render lots of graphical elements 🔵</li>
+</ul>
+</div>
+<div id="plot_geo" class="section level3">
+<h3>3. <code>plot_geo()</code>:</h3>
+<ul>
+<li>Somewhat customization base-maps provide geo-graphic context 🔵
+<ul>
+<li>Compared to <code>plot_mapbox()</code>, base-map styling is quite limited 🔴</li>
+</ul></li>
+<li>Supports <a href="https://en.wikipedia.org/wiki/Orthographic_projection">orthographic</a> (3D) projections as well as a number of other 2D projections 🔵</li>
+</ul>
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>I got this idea thanks to <a href="https://medium.com/@plotlygraphs/how-to-create-2d-and-3d-interactive-weather-maps-in-python-and-r-77ddd53cca8">this post</a> and <a href="https://plot.ly/~empet">plotly user Emilia</a>.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn2"><p>Check for yourself by doing <code>plotly_json(plot_ly(nc))</code>.<a href="#fnref2" class="footnote-back">↩</a></p></li>
+<li id="fn3"><p>The <code>plot_mapbox()</code> builds on <a href="https://www.mapbox.com/mapbox-gl-js/api/">mapbox-gl.js</a> which requires an access token. Once you have one, inform <strong>plotly</strong> about your token via <code>Sys.setenv('MAPBOX_TOKEN' = 'secret token')</code> (or via an <code>.Renviron</code> file).<a href="#fnref3" class="footnote-back">↩</a></p></li>
+<li id="fn4"><p>To learn more, read <a href="https://plotly-book.cpsievert.me/linking-views-without-shiny.html#the-shareddata-plot-pipeline" class="uri">https://plotly-book.cpsievert.me/linking-views-without-shiny.html#the-shareddata-plot-pipeline</a><a href="#fnref4" class="footnote-back">↩</a></p></li>
+</ol>
+</div>

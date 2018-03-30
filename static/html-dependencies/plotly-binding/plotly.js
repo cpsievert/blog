@@ -37,8 +37,10 @@ HTMLWidgets.widget({
         if (!e) window.event;
         if (e.shiftKey) { 
           x.highlight.persistent = true; 
+          x.highlight.persistentShift = true;
         } else {
           x.highlight.persistent = false; 
+          x.highlight.persistentShift = false;
         }
       };
       
@@ -192,6 +194,23 @@ HTMLWidgets.widget({
           Plotly[msg.method].apply(null, args);
         });
       }
+      
+      // plotly's mapbox API doesn't currently support setting bounding boxes
+      // https://www.mapbox.com/mapbox-gl-js/example/fitbounds/
+      // so we do this manually...
+      // TODO: make sure this triggers on a redraw and relayout as well as on initial draw
+      var mapboxIDs = graphDiv._fullLayout._subplots.mapbox;
+      for (var i = 0; i < mapboxIDs.length; i++) {
+        var id = mapboxIDs[i];
+        var mapOpts = x.layout[id] || {};
+        var args = mapOpts._fitBounds || {}
+        if (!args) {
+          continue;
+        }
+        var mapObj = graphDiv._fullLayout[id]._subplot.map;
+        mapObj.fitBounds(args.bounds, args.options);
+      }
+      
     });
     
     // Attach attributes (e.g., "key", "z") to plotly event data
@@ -307,7 +326,8 @@ HTMLWidgets.widget({
         // selecting a point of a "simple" trace means: select the 
         // entire key attached to this trace, which is useful for,
         // say clicking on a fitted line to select corresponding observations 
-        var key = trace._isSimpleKey ? trace.key : trace.key[points[i].pointNumber];
+        var pts = points[i].pointNumber || points[i].pointNumbers;
+        var key = trace._isSimpleKey ? trace.key : Array.isArray(pts) ? pts.map(function(idx) { return trace.key[idx]; }) : trace.key[pts];
         // http://stackoverflow.com/questions/10865025/merge-flatten-an-array-of-arrays-in-javascript
         var keyFlat = trace._isNestedKey ? [].concat.apply([], key) : key;
         
@@ -353,6 +373,17 @@ HTMLWidgets.widget({
       
       
       var selectionChange = function(e) {
+        
+        // Workaround for 'plotly_selected' now firing previously selected
+        // points (in addition to new ones) when holding shift key. In our case,
+        // we just want the new keys 
+        if (x.highlight.on === "plotly_selected" && x.highlight.persistentShift) {
+          // https://stackoverflow.com/questions/1187518/how-to-get-the-difference-between-two-arrays-in-javascript
+          Array.prototype.diff = function(a) {
+              return this.filter(function(i) {return a.indexOf(i) < 0;});
+          };
+          e.value = e.value.diff(e.oldValue);
+        }
         
         // array of "event objects" tracking the selection history
         // this is used to avoid adding redundant selections
@@ -609,6 +640,10 @@ TraceManager.prototype.updateSelection = function(group, keys) {
         if (d.textfont) {
           trace.textfont = trace.textfont || {};
           trace.textfont.color =  selectionColour || trace.textfont.color || d.textfont.color;
+        }
+        if (d.fillcolor) {
+          // TODO: should selectionColour inherit alpha from the existing fillcolor?
+          trace.fillcolor = selectionColour || trace.fillcolor || d.fillcolor;
         }
         // attach a sensible name/legendgroup
         trace.name = trace.name || keys.join("<br />");
