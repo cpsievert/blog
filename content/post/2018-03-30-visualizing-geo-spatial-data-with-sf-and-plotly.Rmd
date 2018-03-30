@@ -168,7 +168,7 @@ style_buttons <- lapply(styles, function(s) {
 })
 ```
 
-With our list of `style_buttons`, we're now ready to visualize something. Here I'll leverage the `trails` data from the [**mapview**](https://r-spatial.github.io/mapview/) package, which has a number of hiking trails of Franconia, France.
+With our list of `style_buttons`, we're now ready to visualize something. Here I'll leverage the `trails` data from the [**mapview**](https://r-spatial.github.io/mapview/) package, which has a number of hiking trails of Franconia, Germany.
 
 ```r
 data(trails, package = 'mapview')
