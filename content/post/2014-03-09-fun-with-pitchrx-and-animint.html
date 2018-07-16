@@ -7,8 +7,18 @@ tags: [pitchRx, animint]
 
 
 
-<p>If you are anything like me, you spend most of the day wrangling data with <a href="http://cran.r-project.org/web/packages/plyr/index.html">plyr</a> (or <a href="http://cran.r-project.org/web/packages/dplyr/index.html">dplyr</a>) and visualizing it with <a href="http://cran.r-project.org/web/packages/ggplot2/index.html">ggplot2</a>. For this reason, I got really excited when I heard about the <a href="https://github.com/tdhock/animint">animint</a> package which allows one to create linked, interactive (even animated) web graphics using ggplot2 code.</p>
-<p>This short post demonstrates linked plots using data from the <a href="http://cran.r-project.org/web/packages/pitchRx/">pitchRx</a> package. If you click on the bars in the bar chart below, the corresponding start versus end speed scatterplot should change to reflect the current selection. I really want to spend more time with animint since it seems to fill a void where other similar (and also great) packages like <a href="http://rcharts.io/">rCharts</a> and <a href="http://ggvis.rstudio.com/">ggvis</a> currently fall short.</p>
+<p>If you are anything like me, you spend most of the day wrangling data with
+<a href="http://cran.r-project.org/web/packages/plyr/index.html">plyr</a> (or
+<a href="http://cran.r-project.org/web/packages/dplyr/index.html">dplyr</a>) and visualizing it with
+<a href="http://cran.r-project.org/web/packages/ggplot2/index.html">ggplot2</a>. For this reason, I got really
+excited when I heard about the <a href="https://github.com/tdhock/animint">animint</a> package which allows
+one to create linked, interactive (even animated) web graphics using ggplot2 code.</p>
+<p>This short post demonstrates linked plots using data from the
+<a href="http://cran.r-project.org/web/packages/pitchRx/">pitchRx</a> package. If you click on the bars in the
+bar chart below, the corresponding start versus end speed scatterplot should change to reflect the
+current selection. I really want to spend more time with animint since it seems to fill a void
+where other similar (and also great) packages like <a href="http://rcharts.io/">rCharts</a> and
+<a href="http://ggvis.rstudio.com/">ggvis</a> currently fall short.</p>
 <pre class="r"><code>library(pitchRx)
 pitches$type &lt;- with(
   pitches, 

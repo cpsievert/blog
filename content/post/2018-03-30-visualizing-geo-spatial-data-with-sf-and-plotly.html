@@ -15,7 +15,7 @@ tags: []
 
 <p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;">
 <b>
-Need help with R, data viz, and/or stats? <a href="https://consulting.cpsievert.me">Work with me</a> or <a href="https://plotcon.plot.ly/workshops/r-shiny-dash-r">attend my 2 day workshop</a>!
+Need help with R, plotly, data viz, and/or stats? <a href="https://consulting.cpsievert.me">Work with me</a>!
 </b>
 </p>
 <p>In my <a href="https://blog.cpsievert.me/2018/01/30/learning-improving-ggplotly-geom-sf/">last post</a>, we explored interactive visualizations of <a href="https://r-spatial.github.io/sf/">simple features</a> (i.e., interactive maps) via <strong>ggplot2</strong>’s <code>geom_sf()</code> and <strong>plotly</strong>’s <code>ggplotly()</code>. This time we’ll make similar visualizations using <strong>plotly</strong>’s “non-ggplot2” mapping interfaces (namely <code>plot_ly()</code>, <code>plot_geo()</code>, and <code>plot_mapbox()</code>). Here’s a quick example of reading a shape file into R as simple features via <a href="https://r-spatial.github.io/sf/reference/st_read.html"><code>st_read()</code></a>, then plotting those features (in this case, North Carolina counties) using each one of the four mapping approaches <strong>plotly</strong> provides. Notice how all of these options auto-magically know how to render simple features:</p>

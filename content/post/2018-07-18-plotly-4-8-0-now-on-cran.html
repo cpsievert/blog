@@ -1,0 +1,141 @@
+---
+title: plotly 4.8.0 now on CRAN
+author: Carson Sievert
+date: '2018-07-18'
+slug: plotly-4-8-0-now-on-cran
+categories:
+  - plotly
+  - R
+  - interactive graphics
+tags: []
+---
+
+
+
+<p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;">
+<b>
+Need help with R, plotly, data viz, and/or stats? <a href="https://consulting.cpsievert.me">Work with me</a>!
+</b>
+</p>
+<p>I’m super excited to announce <strong>plotly</strong> 4.8.0 is now on CRAN! Go ahead and upgrade via:</p>
+<pre class="r"><code>install.packages(&quot;plotly&quot;)</code></pre>
+<p>This release is almost a year in the making and includes a huge amount of improvements, new features, and some slightly breaking changes. This post highlights the biggest and most recent features; but if you already use <strong>plotly</strong>, I highly recommend going over <a href="https://github.com/ropensci/plotly/blob/master/NEWS.md">the full release report</a> as well.</p>
+<div id="new-trace-types" class="section level2">
+<h2>New trace types</h2>
+<p>Upgrading <strong>plotly</strong> from 4.7.1 to 4.8.0 implies an upgrade of plotly.js from 1.29.2 to 1.39.2. This means, amongst many other things, seven new trace types. Here’s a list with a link to their relevant online <a href="https://plot.ly/r" class="uri">https://plot.ly/r</a> documentation:</p>
+<ul>
+<li><a href="https://plot.ly/r/violin/">Violin</a></li>
+<li>3D <a href="https://plot.ly/r/3d-cone/">cones</a> and <a href="https://github.com/plotly/plotly.js/pull/2658">streamtubes</a></li>
+<li><a href="https://plot.ly/r/polar-chart/">New and improved SVG &amp; WebGL polar charts</a></li>
+<li><a href="https://plot.ly/r/splom/">Scatterplot matrices</a> (NOTE: click “Box select” in the modebar of these examples for linked brushing!)</li>
+<li>Tables (NOTE: the new <code>add_table()</code> function makes it easier to map a data frame to this trace type)</li>
+</ul>
+</div>
+<div id="improved-static-image-export" class="section level2">
+<h2>Improved static image export</h2>
+<p>The new <code>orca()</code> function wraps the new <a href="https://github.com/plotly/orca">orca project</a> for killer exporting of plotly graphs, dashboards, etc to various formats (most notably, svg and pdf!). Simply give <code>orca()</code> a <strong>plotly</strong> object and a filename with the extension that you desire. Here’s an example of exporting to SVG and post-processing the result in Adobe Illustrator:</p>
+<pre class="r"><code>p &lt;- plot_ly(z = ~volcano) %&gt;% add_surface()
+orca(p, &quot;surface-plot.svg&quot;)</code></pre>
+<p><img src="https://i.imgur.com/chFudoX.gif" /></p>
+</div>
+<div id="auto-margins" class="section level2">
+<h2>Auto margins</h2>
+<p>Axis objects now default to <code>automargin = TRUE</code>. This helps the axis labels of any <strong>plotly</strong> graph to be more readable by default:</p>
+<pre class="r"><code>library(plotly)
+library(dplyr)
+
+# plot the number of missing values by city
+txhousing %&gt;% 
+  group_by(city) %&gt;% 
+  summarise(missing = sum(is.na(median))) %&gt;% 
+  filter(missing &gt; 0) %&gt;%
+  plot_ly(
+    x = ~missing, 
+    y = ~forcats::fct_reorder(city, missing)
+  )</code></pre>
+<p><img src="https://i.imgur.com/9hkTLUU.png" /></p>
+<p>To get the old behavior back, you can set <code>automargin = FALSE</code>. This hopefully won’t be needed except in extreme edge cases:</p>
+<pre class="r"><code>layout(.Last.value, yaxis = list(automargin = FALSE))</code></pre>
+<p><img src="https://i.imgur.com/K8jEseM.png" /></p>
+</div>
+<div id="localization-support" class="section level2">
+<h2>Localization support</h2>
+<p>The new <code>locale</code> argument in the <code>config()</code> function makes it easy to switch the language used for date axes and on-graph text (e.g., modebar buttons). This example demonstrates Japanese (<code>&quot;ja&quot;</code>) – see <code>?config</code> for more examples and documentation of other locales.</p>
+<pre class="r"><code>today &lt;- Sys.Date()
+x &lt;- seq.Date(today, today + 360, by = &quot;day&quot;)
+plot_ly(x = x, y = rnorm(length(x))) %&gt;%
+  add_lines() %&gt;%
+  config(locale = &quot;ja&quot;)</code></pre>
+<p><img src="https://i.imgur.com/8nYv98Z.png" /></p>
+</div>
+<div id="partial-plotly.js-bundles" class="section level2">
+<h2>Partial plotly.js bundles</h2>
+<p>By default, the R package ships with a <em>full</em> bundle of plotly.js, which is quite large (about 2.6 MB in this release). In many cases, graphs can be rendered with a <a href="https://github.com/plotly/plotly.js/tree/master/dist#partial-bundles">partial plotly.js bundle</a>, which can lead to a 3x reduction in file size! To take advantage, just apply the <code>partial_bundle()</code> function to a <strong>plotly</strong> object, which (by default) will try and find a suitable bundle.</p>
+<pre class="r"><code>library(plotly)
+p &lt;- plot_ly(x = 1:10, y = 1:10) %&gt;% add_markers()
+save_widget &lt;- function(p, f) {
+  owd &lt;- setwd(dirname(f))
+  on.exit(setwd(owd))
+  htmlwidgets::saveWidget(p, f)
+  mb &lt;- round(file.info(f)$size / 1e6, 3)
+  message(&quot;File is: &quot;, mb,&quot; MB&quot;)
+}
+f1 &lt;- tempfile(fileext = &quot;.html&quot;)
+save_widget(p, f1)</code></pre>
+<pre class="r"><code>#&gt; File is: 2.94 MB</code></pre>
+<pre class="r"><code>f2 &lt;- tempfile(fileext = &quot;.html&quot;)
+save_widget(partial_bundle(p), f2)</code></pre>
+<pre class="r"><code>#&gt; File is: 0.973 MB</code></pre>
+</div>
+<div id="new-and-improved-webgl-renderer" class="section level2">
+<h2>New and improved WebGL renderer</h2>
+<p>For a while now, we’ve had the ability to switch from SVG to WebGL via the function <code>toWebGL()</code>, which can improve performance when rendering lots of graphical elements. Now there is even more reason to do so as the new WebGL renderer is now <a href="https://github.com/plotly/plotly.js/issues/130">much closer to being feature complete</a> with the SVG renderer.</p>
+<pre class="r"><code>plot_ly(x = rnorm(1e6), y = rnorm(1e6)) %&gt;%
+  add_markers(color = I(&quot;transparent&quot;), stroke = I(&quot;black&quot;), span = I(1)) %&gt;%
+  toWebGL()</code></pre>
+<p><img src="https://i.imgur.com/MfRuqER.gif" /></p>
+</div>
+<div id="mathjax-support" class="section level2">
+<h2>MathJax support</h2>
+<p>LaTeX rendering via MathJax is now possible via the new <code>TeX()</code> function may be used to flag a character vector as LaTeX. To load MathJaX externally (meaning an internet connection is needed for TeX rendering), set the new <code>mathjax</code> argument in <code>config()</code> to <code>&quot;cdn&quot;</code>:</p>
+<pre class="r"><code>library(plotly)
+
+plot_ly() %&gt;%
+  add_lines(x = zoo::index(co2), y = co2) %&gt;%
+  layout(
+    title = TeX(&quot;CO_2 \\text{measured in } \\frac{parts}{million}&quot;),
+    xaxis = list(title = &quot;Time&quot;),
+    yaxis = list(title = TeX(&quot;\\text{Atmospheric concentraion of CO}_2&quot;))
+  ) %&gt;%
+  config(mathjax = &quot;cdn&quot;)</code></pre>
+<p>To use a local version of MathJax (so that your graphs will render without an internet connection), you need to inform <strong>plotly</strong> where it’s located. If you don’t already have MathJax locally, I recommend downloading the official MathJax git repo. Here’s how to do that using terminal commands:</p>
+<pre class="shell"><code>$ git clone https://github.com/mathjax/MathJax.git
+$ cd MathJax</code></pre>
+<p>Now set the <code>PLOTLY_MATHJAX_PATH</code> environment variable so that <strong>plotly</strong> knows where that MathJax folder lives. I recommend setting this variable in you <code>.Rprofile</code> so you don’t have to reset it everytime you restart R:</p>
+<pre class="shell"><code>$ export PLOTLY_MATHJAX_PATH=`pwd`
+$ echo &quot;Sys.setenv(&#39;PLOTLY_MATHJAX_PATH&#39; = &#39;$PLOTLY_MATHJAX_PATH&#39;)&quot; &gt;&gt; ~/.Rprofile</code></pre>
+<p>Once <code>PLOTLY_MATHJAX_PATH</code> is set, specify <code>mathjax=&quot;local&quot;</code> in <code>config()</code>:</p>
+<pre class="r"><code>library(plotly)
+
+plotly_empty() %&gt;%
+  add_trace(x = 1, y = 1, text = TeX(&quot;\\alpha&quot;), mode = &quot;text&quot;, size = I(100), hoverinfo = &quot;text&quot;) %&gt;%
+  config(mathjax = &quot;local&quot;)</code></pre>
+<div id="mathjax-caveats" class="section level3">
+<h3>MathJax caveats</h3>
+<ol style="list-style-type: decimal">
+<li><p>At least currently, plotly.js requires SVG-based rendering which doesn’t play nicely with HTML-based rendering (e.g. <strong>rmarkdown</strong> documents and <strong>shiny</strong> apps) . If you need both the SVG and HTML rendering, consider <code>&lt;iframe&gt;</code>-ing your plotly graph(s) into the larger document (see <a href="https://github.com/ropensci/plotly/blob/master/inst/examples/rmd/MathJax/index.Rmd">here</a> for an example).</p></li>
+<li><p>Due to the size and nature of MathJax, using <code>htmlwidget::saveWidget()</code> with <code>selfcontained = TRUE</code> won’t work. At least for now, when you need to save a plotly graph (<code>p</code>) with local MathJax, do <code>htmlwidget::saveWidget(p, selfcontained = FALSE)</code></p></li>
+</ol>
+</div>
+</div>
+<div id="other-features-discussed-previously" class="section level2">
+<h2>Other features discussed previously</h2>
+<p>There are numerous other exciting features that come with this release that I’ve written about previously:</p>
+<ul>
+<li><strong>sf</strong> support via <code>ggplotly()</code>, <code>plot_ly()</code>, <code>plot_geo()</code>, and <code>plot_mapbox()</code>.</li>
+<li>Better control over the stroke (i.e., outline) appearance of various filled graphical marks via the new “special arguments” (<code>stroke</code>, <code>strokes</code>, <code>alpha_stroke</code>, <code>span</code>, and <code>spans</code>).</li>
+</ul>
+<p>Read more at:</p>
+<p><a href="http://blog.cpsievert.me/2018/01/30/learning-improving-ggplotly-geom-sf/" class="uri">http://blog.cpsievert.me/2018/01/30/learning-improving-ggplotly-geom-sf/</a>
+<a href="http://blog.cpsievert.me/2018/03/30/visualizing-geo-spatial-data-with-sf-and-plotly/" class="uri">http://blog.cpsievert.me/2018/03/30/visualizing-geo-spatial-data-with-sf-and-plotly/</a></p>
+</div>

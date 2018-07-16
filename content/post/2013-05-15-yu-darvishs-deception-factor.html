@@ -7,15 +7,23 @@ tags: [MLB, PITCHfx, pitchRx, animation, rgl]
 
 
 
-<p><span class="marginnote"> <img src="http://i.imgur.com/gjgshQ6.gif"> </span></p>
-<p>On April 2nd, 2013 Yu Darvish <a href="http://sports.yahoo.com/news/yu-darvish-loses-perfect-game-030913556--mlb.html">flirted with pitching perfection</a>. To demonstrate his ability to deceive batters with a consistent delivery over different pitch types, <a href="http://www.reddit.com/r/baseball/comments/1d2z6d/all_of_darvishs_primary_pitches_at_once/">redditor DShep created this gif</a>, which layers video of five different pitches thrown by Darvish on April 24th:</p>
+<p><span class="marginnote">
+<img src="http://i.imgur.com/gjgshQ6.gif">
+</span></p>
+<p>On April 2nd, 2013 Yu Darvish <a href="http://sports.yahoo.com/news/yu-darvish-loses-perfect-game-030913556--mlb.html">flirted with pitching
+perfection</a>. To demonstrate his ability to deceive batters with a consistent delivery over different pitch types, <a href="http://www.reddit.com/r/baseball/comments/1d2z6d/all_of_darvishs_primary_pitches_at_once/">redditor DShep created this
+gif</a>, which layers video of five different pitches thrown by Darvish on April 24th:</p>
 <p>We can easily recreate pitch trajectories with publicly available PITCHf/x data using the <a href="http://cran.r-project.org/web/packages/pitchRx/">pitchRx</a> <a href="http://cran.r-project.org">R</a> package. First, we collect all the pitches thrown by Darvish to Albert Pujols on April 24th:</p>
 <pre class="r"><code>library(pitchRx)
 dat &lt;- scrape(start = &quot;2013-04-24&quot;, end = &quot;2013-04-24&quot;)
 atbats &lt;- subset(dat$atbat, pitcher_name == &quot;Yu Darvish&quot; &amp; 
                 batter_name == &quot;Albert Pujols&quot;)
 pitches &lt;- plyr::join(atbats, dat$pitch, by = c(&quot;num&quot;, &quot;url&quot;))</code></pre>
-<p>The <strong>pitchRx</strong> package also provides a function called <code>animateFX()</code> which makes it easy to animate pitches. Note that we take a different perspective from above by imagining the pitches coming closer as time progresses. <span class="marginnote"> If you’re following along, you probably want to do <code>animation::saveHTML(animateFX(pitches))</code> instead for a better viewing experience. You can also check out <a href="http://cpsievert.github.io/baseballR/20140818/">this post</a> to see how to make more interactive animations. </span></p>
+<p>The <strong>pitchRx</strong> package also provides a function called <code>animateFX()</code> which makes it easy to animate pitches.
+Note that we take a different perspective from above by imagining the pitches coming closer as time progresses.
+<span class="marginnote">
+If you’re following along, you probably want to do <code>animation::saveHTML(animateFX(pitches))</code> instead for a better viewing experience. You can also check out <a href="http://cpsievert.github.io/baseballR/20140818/">this post</a> to see how to make more interactive animations.
+</span></p>
 <pre class="r"><code>animateFX(pitches)</code></pre>
 <video width="672"  controls loop>
 <source src="2013-05-15-yu-darvishs-deception-factor_files/figure-html/ani.webm" />

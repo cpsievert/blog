@@ -20,10 +20,9 @@ packageVersion(&quot;pitchRx&quot;) </code></pre>
 scrape(start = &quot;2014-06-01&quot;, end = &quot;2014-06-01&quot;, connect = db$con)</code></pre>
 <pre class="r"><code>select(tbl(db, &quot;atbat&quot;), date)</code></pre>
 <pre><code>## # Source:   lazy query [?? x 1]
-## # Database: sqlite 3.19.3
-## #   [/Users/cpsievert/github/blog2/content/post/new-db.sqlite3]
-##          date
-##         &lt;chr&gt;
+## # Database: sqlite 3.22.0 [new-db.sqlite3]
+##    date      
+##    &lt;chr&gt;     
 ##  1 2014_06_01
 ##  2 2014_06_01
 ##  3 2014_06_01

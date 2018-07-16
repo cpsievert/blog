@@ -13,7 +13,7 @@ tags: []
 
 <p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;" >
   <b>
-   Need help with R, data viz, and/or stats? [Work with me](https://consulting.cpsievert.me) or [attend my 2 day workshop](https://plotcon.plot.ly/workshops/r-shiny-dash-r)!
+Need help with R, plotly, data viz, and/or stats? <a href="https://consulting.cpsievert.me">Work with me</a>!
   </b>
 </p>
 

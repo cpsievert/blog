@@ -14,7 +14,7 @@ tags: []
 
 <p style="background-color: #f5f5f5; border-left-width: 10px; border-left-style: solid; border-left-color: #CBF8DF;" >
   <b>
-  [My next workshop](https://workshops.cpsievert.me/20180303/) is in [March at Plotly HQ in Montréal](https://plotcon.plot.ly/) `r emo::ji("snowflake")`. <br /> [I'm also available](https://consulting.cpsievert.me/) for R training and general consulting.
+Need help with R, plotly, data viz, and/or stats? <a href="https://consulting.cpsievert.me">Work with me</a>!
   </b>
 </p>
 
@@ -44,7 +44,7 @@ In addition to asking attendees to fill out a survey several weeks beforehand, I
 
 [^1]: Your turn exercises are largely designed to reinforce important concepts and break up the lecture every 10-20 minutes.
 
-## Bring your work environment to them `r emo::ji("briefcase")` `r emo::ji("laptop")`
+## Bring your work environment to them `r emo::ji("briefcase")` `r emo::ji("computer")`
 
 Before the workshop, I also ask attendees to download my [cpsievert/workshops](https://hub.docker.com/r/cpsievert/workshops/) Docker image on the machine that they plan on bringing. This way, in theory, we don't waste any time on setup, and attendees have immediate access to a computational environment with all the materials and software dependencies for following demos and performing exercises. Moreover, since this image builds off of [rocker/rstudio](https://hub.docker.com/r/rocker/rstudio/), they can also easily run RStudio via their web browser which provides a nice and consistent user experience. In practice, I've found about 1 in 4 attendees actually try to get Docker setup before the workshop, but with a little time and help, almost everyone can get it working. 
 
