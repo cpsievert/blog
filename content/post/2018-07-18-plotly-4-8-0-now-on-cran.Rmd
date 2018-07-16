@@ -43,7 +43,7 @@ p <- plot_ly(z = ~volcano) %>% add_surface()
 orca(p, "surface-plot.svg")
 ```
 
-<img src="https://i.imgur.com/chFudoX.gif" />
+<img src="https://i.imgur.com/chFudoX.gif" width="100%" />
 
 ## Auto margins
 
@@ -64,7 +64,7 @@ txhousing %>%
   )
 ```
 
-<img src="https://i.imgur.com/9hkTLUU.png" />
+<img src="https://i.imgur.com/9hkTLUU.png" width="100%"/>
 
 To get the old behavior back, you can set `automargin = FALSE`. This hopefully won't be needed except in extreme edge cases:
 
@@ -72,7 +72,7 @@ To get the old behavior back, you can set `automargin = FALSE`. This hopefully w
 layout(.Last.value, yaxis = list(automargin = FALSE))
 ```
 
-<img src="https://i.imgur.com/K8jEseM.png" />
+<img src="https://i.imgur.com/K8jEseM.png" width="100%"/>
 
 ## Localization support
 
@@ -86,7 +86,7 @@ plot_ly(x = x, y = rnorm(length(x))) %>%
   config(locale = "ja")
 ```
 
-<img src="https://i.imgur.com/8nYv98Z.png" />
+<img src="https://i.imgur.com/8nYv98Z.png" width="100%"/>
 
 ## Partial plotly.js bundles
 
@@ -129,7 +129,7 @@ plot_ly(x = rnorm(1e6), y = rnorm(1e6)) %>%
   toWebGL()
 ```
 
-<img src="https://i.imgur.com/MfRuqER.gif" />
+<img src="https://i.imgur.com/MfRuqER.gif" width="100%"/>
 
 
 ## MathJax support
