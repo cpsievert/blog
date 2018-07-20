@@ -190,4 +190,5 @@ There are numerous other exciting features that come with this release that I've
 Read more at:
 
 http://blog.cpsievert.me/2018/01/30/learning-improving-ggplotly-geom-sf/
+
 http://blog.cpsievert.me/2018/03/30/visualizing-geo-spatial-data-with-sf-and-plotly/
