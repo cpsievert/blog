@@ -16,11 +16,11 @@ I'm excited to announce **plotly** 4.9.0 is now on CRAN! Go ahead and upgrade vi
 install.packages("plotly")
 ```
 
-This release is about 8 months in the making and includes many [bug fixes](https://github.com/ropensci/plotly/blob/master/NEWS.md#bug-fixes), some [new features](https://github.com/ropensci/plotly/blob/master/NEWS.md#new-features--improvements), and a couple slightly [breaking changes](https://github.com/ropensci/plotly/blob/master/NEWS.md#changes). Over this time, I've mainly focused on getting a new draft of my new book, <https://plotly-r.com>, and some of these additions to **plotly** are in support of that new content. This post highlights the most important release features, but I highly recommend going over [the full release report](https://github.com/ropensci/plotly/blob/master/NEWS.md) as well.
+This release is about 8 months in the making and includes many [bug fixes](https://github.com/ropensci/plotly/blob/master/NEWS.md#bug-fixes), some [new features](https://github.com/ropensci/plotly/blob/master/NEWS.md#new-features--improvements), and a couple slightly [breaking changes](https://github.com/ropensci/plotly/blob/master/NEWS.md#changes). Over this time, I've mainly focused on getting a first draft of my new book, <https://plotly-r.com>, and some of these additions to **plotly** are in support of that new content. This post highlights the most important release features, but I highly recommend going over [the full release report](https://github.com/ropensci/plotly/blob/master/NEWS.md) as well.
 
 ## New shiny events
 
-This release exposes a handful of new plotly events in shiny. [See here](https://github.com/ropensci/plotly/blob/master/NEWS.md#new-features--improvements) for the full list of new events, [this section of my book](https://plotly-r.com/linking-views-with-shiny.html#shiny-plotly-inputs) to learn about how to leverage plotly events in shiny, and my [RStudio webinar](https://resources.rstudio.com/webinars/accessing-and-responding-to-plotly-events-in-shiny-carson-sievert) for a tutorial on how to create scalable crossfiltering applications with these new events (like in the video below).
+This release exposes a handful of new plotly events in shiny. [See here](https://github.com/ropensci/plotly/blob/master/NEWS.md#new-features--improvements) for the full list of new events, [this section of my book](https://plotly-r.com/linking-views-with-shiny.html#shiny-plotly-inputs) to learn about how to leverage plotly events in shiny, and my [RStudio webinar](https://resources.rstudio.com/webinars/accessing-and-responding-to-plotly-events-in-shiny-carson-sievert) for a tutorial on how to create responsive and scalable crossfiltering applications with these new events (like in the video below).
 
 <iframe src="https://player.vimeo.com/video/318129502?title=0&byline=0&portrait=0" width="640" height="258" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
 
@@ -76,7 +76,7 @@ plot_ly(x = rnorm(100, 0, 1e5)) %>%
 
 <img src="/img/hovertemplate.png" width="100%"/>
 
-## New title placement API
+## New title API
 
 Previously plot title's were created by providing a string to [`layout.title`](https://plot.ly/r/reference/#layout-title). This will continue to work, but `layout.title` now accepts a list object, which adds the ability to move the title's location.
 
