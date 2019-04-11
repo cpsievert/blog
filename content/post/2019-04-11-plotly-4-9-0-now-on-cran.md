@@ -20,10 +20,9 @@ This release is about 8 months in the making and includes many [bug fixes](https
 
 ## New shiny events
 
-This release exposes a handful of new plotly events in shiny. [See here](https://github.com/ropensci/plotly/blob/master/NEWS.md#new-features--improvements) for the full list of new events, [this section of my book](https://plotly-r.com/linking-views-with-shiny.html#shiny-plotly-inputs) to learn about how to leverage plotly events in shiny, and [RStudio webinar](https://resources.rstudio.com/webinars/accessing-and-responding-to-plotly-events-in-shiny-carson-sievert) for a tutorial on how to create scalable crossfiltering applications with these new events (like in the video below).
+This release exposes a handful of new plotly events in shiny. [See here](https://github.com/ropensci/plotly/blob/master/NEWS.md#new-features--improvements) for the full list of new events, [this section of my book](https://plotly-r.com/linking-views-with-shiny.html#shiny-plotly-inputs) to learn about how to leverage plotly events in shiny, and my [RStudio webinar](https://resources.rstudio.com/webinars/accessing-and-responding-to-plotly-events-in-shiny-carson-sievert) for a tutorial on how to create scalable crossfiltering applications with these new events (like in the video below).
 
 <iframe src="https://player.vimeo.com/video/318129502?title=0&byline=0&portrait=0" width="640" height="258" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
-<p><a href="https://vimeo.com/318129502">crossfilter</a> from <a href="https://vimeo.com/cpsievert">Carson Sievert</a> on <a href="https://vimeo.com">Vimeo</a>.</p>
 
 Also, see the [advanced applications section of the plotly book](https://plotly-r.com/linking-views-with-shiny.html#drill-down) for some new drill down examples.
 
