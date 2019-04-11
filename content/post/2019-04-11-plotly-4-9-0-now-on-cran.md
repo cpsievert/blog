@@ -10,7 +10,7 @@ categories:
 tags: []
 ---
 
-I'm super excited to announce **plotly** 4.9.0 is now on CRAN! Go ahead and upgrade via:
+I'm excited to announce **plotly** 4.9.0 is now on CRAN! Go ahead and upgrade via:
 
 ```r
 install.packages("plotly")
@@ -28,7 +28,7 @@ Also, see the [advanced applications section of the plotly book](https://plotly-
 
 ## New version of plotly.js
 
-This new version of the R package upgrades the underlying plotly.js library from v1.42.3 to v1.46.1. This includes many bug fixes and new features, some of which I don't mention here or in the R package's NEWS, but you can see [plotly.js' release page](https://github.com/plotly/plotly.js/releases) for more info. 
+This new version of the R package upgrades the underlying plotly.js library from v1.42.3 to v1.46.1. This includes many bug fixes and new features, some of which I don't mention here or in the R package's NEWS, but you can see [plotly.js' release page](https://github.com/plotly/plotly.js/releases) for more info. That being said, here's a breakdown of the most important items:
 
 ### New trace types
 
